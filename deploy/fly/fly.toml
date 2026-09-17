@@ -1,0 +1,46 @@
+app = "cms-platform"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "deploy/fly/Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  LOG_CHANNEL = "stderr"
+  LOG_LEVEL = "error"
+  FILESYSTEM_DISK = "s3"
+  DB_CONNECTION = "pgsql"
+  QUEUE_CONNECTION = "redis"
+  CACHE_STORE = "redis"
+  SESSION_DRIVER = "redis"
+  NUXT_API_BASE_SSR = "http://127.0.0.1:8080/api/v1"
+
+[deploy]
+  release_command = "php artisan migrate --force"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 200
+    soft_limit = 150
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[checks]]
+  name = "health"
+  port = 8080
+  type = "http"
+  interval = "10s"
+  timeout = "5s"
+  grace_period = "30s"
+  method = "GET"
+  path = "/up"

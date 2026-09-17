@@ -1,4 +1,4 @@
-.PHONY: help up down restart build shell logs clean install migrate migrate-fresh migrate-rollback seed test tinker composer npm artisan db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link pint stan docker-reset docker-prune docker-check frontend-shell frontend-logs db-pull db-pull-dump ssl-renew
+.PHONY: help up down restart build shell logs clean install migrate migrate-fresh migrate-rollback seed test tinker composer npm artisan db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link pint stan docker-reset docker-prune docker-check frontend-shell frontend-logs db-pull db-pull-dump ssl-renew local-up local-down local-build local-rebuild local-logs local-shell local-migrate local-migrate-fresh local-seed local-artisan local-db-shell local-tenants-migrate local-tinker
 
 # Default target
 help:
@@ -48,6 +48,21 @@ help:
 	@echo "  make storage-link    - Create storage symlink"
 	@echo "  make pint            - Run Laravel Pint (code style fixer)"
 	@echo "  make ssl-renew       - Renew SSL certificates on production"
+	@echo ""
+	@echo "── Local Docker (Fly.io stack — PostgreSQL) ──────────────────"
+	@echo "  make local-up            - Start local stack (postgres + redis + app)"
+	@echo "  make local-down          - Stop local stack"
+	@echo "  make local-build         - Build without cache"
+	@echo "  make local-rebuild       - Stop, rebuild, and restart"
+	@echo "  make local-logs          - Tail all container logs"
+	@echo "  make local-shell         - Shell into the app container"
+	@echo "  make local-migrate       - Run central DB migrations"
+	@echo "  make local-migrate-fresh - Fresh central DB migrations"
+	@echo "  make local-seed          - Seed the central DB"
+	@echo "  make local-tenants-migrate - Run migrations on all tenant DBs"
+	@echo "  make local-db-shell      - PostgreSQL shell (central DB)"
+	@echo "  make local-tinker        - Laravel Tinker"
+	@echo "  make local-artisan CMD='...' - Run any artisan command"
 
 # Docker commands
 up:
@@ -202,6 +217,51 @@ storage-link:
 pint:
 	cd backend && ./vendor/bin/sail pint
 
+# ── Local Docker (mirrors Fly.io — PostgreSQL) ────────────────────────────────
+LOCAL_COMPOSE = docker compose -f docker-compose.local.yml
+
+local-up:
+	$(LOCAL_COMPOSE) up -d
+
+local-down:
+	$(LOCAL_COMPOSE) down
+
+local-build:
+	$(LOCAL_COMPOSE) build --no-cache
+
+local-rebuild:
+	$(LOCAL_COMPOSE) down
+	$(LOCAL_COMPOSE) build --no-cache
+	$(LOCAL_COMPOSE) up -d
+
+local-logs:
+	$(LOCAL_COMPOSE) logs -f
+
+local-shell:
+	$(LOCAL_COMPOSE) exec app sh
+
+local-migrate:
+	$(LOCAL_COMPOSE) exec app php artisan migrate --force
+
+local-migrate-fresh:
+	$(LOCAL_COMPOSE) exec app php artisan migrate:fresh --force
+
+local-seed:
+	$(LOCAL_COMPOSE) exec app php artisan db:seed --force
+
+local-tenants-migrate:
+	$(LOCAL_COMPOSE) exec app php artisan tenants:migrate --force
+
+local-db-shell:
+	$(LOCAL_COMPOSE) exec postgres psql -U webnova -d webnova_central
+
+local-tinker:
+	$(LOCAL_COMPOSE) exec app php artisan tinker
+
+local-artisan:
+	$(LOCAL_COMPOSE) exec app php artisan $(CMD)
+
+# ── SSL ───────────────────────────────────────────────────────────────────────
 # SSL
 ssl-renew:
 	@echo "Renewing SSL certificates..."

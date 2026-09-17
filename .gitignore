@@ -1,0 +1,26 @@
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Env files
+.env
+backend/.env
+frontend/.env
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+frontend/.output/
+frontend/.nuxt/
+
+# Logs
+*.log
+storage/logs/
+
+# Word docs (use .md versions instead)
+*.docx

@@ -15,10 +15,4 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         return ['id', 'name', 'mobile_code', 'app_key'];
     }
-
-    // Database name: customer_<alias>  e.g. customer_cda
-    public function database(): \Stancl\Tenancy\Contracts\TenantDatabaseManager
-    {
-        return app(\Stancl\Tenancy\Database\TenantDatabaseManagers\PostgreSQLDatabaseManager::class);
-    }
 }

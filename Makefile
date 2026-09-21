@@ -1,4 +1,4 @@
-.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-certs-add fly-certs-show
+.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
 
 COMPOSE    = docker compose -f docker-compose.local.yml
 FLY_CONFIG = deploy/fly/fly.toml
@@ -54,13 +54,20 @@ help:
 	@echo "  make docker-prune        - Full Docker system cleanup"
 	@echo "  make docker-check        - Show Docker status"
 	@echo ""
-	@echo "── Fly.io ───────────────────────────────────────────────────────────"
-	@echo "  make fly-deploy          - Deploy to Fly.io"
-	@echo "  make fly-logs            - Stream Fly.io logs"
-	@echo "  make fly-shell           - SSH into the Fly.io app"
-	@echo "  make fly-migrate         - Run central DB migrations on Fly.io"
-	@echo "  make fly-certs-add DOMAIN=school.edu.gh   - Add custom domain + SSL"
-	@echo "  make fly-certs-show DOMAIN=school.edu.gh  - Check SSL cert status"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "  PRODUCTION — Fly.io  (app: cms-platform)"
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "  make fly-deploy                       - Deploy to Fly.io"
+	@echo "  make fly-logs                         - Stream live logs"
+	@echo "  make fly-shell                        - SSH into the app"
+	@echo "  make fly-migrate                      - Run central DB migrations"
+	@echo "  make fly-tenants-migrate              - Run tenant DB migrations"
+	@echo "  make fly-seed                         - Seed production DB"
+	@echo "  make fly-db                           - Connect to production Postgres (psql)"
+	@echo "  make fly-db-proxy                     - Tunnel Postgres to localhost:5432 (TablePlus)"
+	@echo "  make fly-certs-add DOMAIN=x.edu.gh    - Add custom domain + SSL"
+	@echo "  make fly-certs-show DOMAIN=x.edu.gh   - Check SSL cert status"
 	@echo ""
 
 # ── Containers ────────────────────────────────────────────────────────────────
@@ -178,7 +185,10 @@ docker-check:
 	@echo "\nRunning containers:"
 	@docker ps -a
 
-# ── Fly.io ────────────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PRODUCTION — Fly.io  (app: cms-platform)
+# ══════════════════════════════════════════════════════════════════════════════
 fly-deploy:
 	fly deploy --config $(FLY_CONFIG)
 
@@ -191,10 +201,23 @@ fly-shell:
 fly-migrate:
 	fly ssh console --config $(FLY_CONFIG) -C "php artisan migrate --force"
 
+fly-tenants-migrate:
+	fly ssh console --app cms-platform -C "php artisan tenants:migrate --force"
+
+fly-seed:
+	fly ssh console --app cms-platform -C "php artisan db:seed --force"
+
+fly-db:
+	fly postgres connect -a $(FLY_DB_APP)
+
+fly-db-proxy:
+	@echo "Proxying Fly Postgres to localhost:5432 — connect TablePlus to 127.0.0.1:5432"
+	fly proxy 5432 -a $(FLY_DB_APP)
+
 fly-certs-add:
 	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-add DOMAIN=school.edu.gh"; exit 1)
-	fly certs add $(DOMAIN) --config $(FLY_CONFIG)
+	fly certs add $(DOMAIN) --app cms-platform
 
 fly-certs-show:
 	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-show DOMAIN=school.edu.gh"; exit 1)
-	fly certs show $(DOMAIN) --config $(FLY_CONFIG)
+	fly certs show $(DOMAIN) --app cms-platform

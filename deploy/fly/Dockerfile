@@ -40,8 +40,7 @@ RUN composer install \
     --prefer-dist \
     --no-interaction
 
-RUN php artisan filament:assets \
-    && php artisan storage:link
+RUN php artisan filament:assets
 
 # Built Nuxt SSR output
 COPY --from=nuxt-builder /build/.output /var/www/frontend/.output
@@ -49,6 +48,8 @@ COPY --from=nuxt-builder /build/.output /var/www/frontend/.output
 # Fly.io runtime configs
 COPY deploy/fly/docker/nginx.conf /etc/nginx/nginx.conf
 COPY deploy/fly/docker/supervisord.conf /etc/supervisord.conf
+COPY deploy/fly/docker/start.sh /start.sh
+RUN chmod +x /start.sh
 
 # Permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -66,4 +67,4 @@ RUN printf "opcache.enable=1\nopcache.memory_consumption=256\nopcache.max_accele
 
 EXPOSE 8080
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/start.sh"]

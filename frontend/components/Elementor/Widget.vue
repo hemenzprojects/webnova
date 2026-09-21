@@ -58,7 +58,7 @@
       <div v-else-if="widget.type === 'image'" :class="getAlignmentClass(widget.data.alignment)">
         <img
           v-if="widget.data.url"
-          :src="widget.data.url"
+          :src="getImageUrl(widget.data.url) || ''"
           :alt="widget.data.alt"
           :style="{ width: widget.data.width ? `${widget.data.width.size}${widget.data.width.unit}` : '100%' }"
           class="max-w-full h-auto rounded"
@@ -155,6 +155,7 @@ const props = defineProps<{
 const emit = defineEmits(['select', 'update', 'remove'])
 
 const { widgetLibrary } = useElementorEditor()
+const { getImageUrl } = useImageUrl()
 const isDragging = ref(false)
 
 const handleDragStart = (e: DragEvent) => {

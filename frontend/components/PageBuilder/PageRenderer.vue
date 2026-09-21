@@ -44,7 +44,7 @@
               <!-- Image Widget - Inline version for columns -->
               <img
                 v-else-if="block.type === 'image'"
-                :src="block.data.url"
+                :src="transformImageUrl(block.data.url) || ''"
                 :alt="block.data.alt"
                 :class="['max-w-full h-auto', getAlignmentClass(block.data.alignment)]"
                 :style="{ width: block.data.width ? `${block.data.width.size}${block.data.width.unit}` : '100%' }"
@@ -172,7 +172,7 @@ const props = defineProps<{
   blocks: any[]
 }>()
 
-const { sortBlocks } = usePageBuilder()
+const { sortBlocks, transformImageUrl } = usePageBuilder()
 
 const groupedSections = computed(() => {
   const blocks = sortBlocks(props.blocks || [])

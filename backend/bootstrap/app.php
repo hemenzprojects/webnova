@@ -12,11 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [
+        $middleware->append(
             \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
-        ]);
+        );
         $middleware->api(append: [
-            \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
+            \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

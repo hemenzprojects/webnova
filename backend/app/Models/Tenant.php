@@ -11,6 +11,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     public static function getCustomColumns(): array
     {
         return ['id', 'name', 'mobile_code', 'app_key'];

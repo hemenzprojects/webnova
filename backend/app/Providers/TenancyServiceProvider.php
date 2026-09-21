@@ -12,6 +12,7 @@ use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -27,10 +28,9 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    Jobs\SeedDatabase::class,
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(true),
+                })->shouldBeQueued(false),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -95,6 +95,14 @@ class TenancyServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Allow central domains to pass through without tenant identification
+        InitializeTenancyByDomain::$onFail = function ($exception, $request, $next) {
+            if (in_array($request->getHost(), config('tenancy.central_domains', []))) {
+                return $next($request);
+            }
+            throw $exception;
+        };
+
         $this->bootEvents();
         $this->mapRoutes();
 

@@ -28,6 +28,10 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    volumes:
+      - ./backend:/var/www/html
+      - app-vendor:/var/www/html/vendor
+      - ./deploy/local/php-local.ini:/usr/local/etc/php/conf.d/zz-local.ini
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,7 +61,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-local:/data
     healthcheck:
@@ -75,3 +79,4 @@ networks:
 volumes:
   postgres-local:
   redis-local:
+  app-vendor:

@@ -40,6 +40,9 @@ RUN composer install \
     --prefer-dist \
     --no-interaction
 
+RUN php artisan filament:assets \
+    && php artisan storage:link
+
 # Built Nuxt SSR output
 COPY --from=nuxt-builder /build/.output /var/www/frontend/.output
 

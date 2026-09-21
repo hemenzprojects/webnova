@@ -1,6 +1,8 @@
-.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull db-pull-dump ssl-renew
+.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-certs-add fly-certs-show
 
-COMPOSE = docker compose -f docker-compose.local.yml
+COMPOSE    = docker compose -f docker-compose.local.yml
+FLY_CONFIG = deploy/fly/fly.toml
+FLY_DB_APP = cms-postgres
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -22,6 +24,9 @@ help:
 	@echo "  make tenants-migrate     - Run migrations on all tenant DBs"
 	@echo "  make db-shell            - PostgreSQL shell (central DB)"
 	@echo "  make redis-shell         - Redis CLI"
+	@echo "  make db-pull             - Pull production Fly Postgres into local"
+	@echo "                             Requires: export FLY_DB_URL=<url>"
+	@echo "                             Get url:  fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"
 	@echo ""
 	@echo "── Laravel ──────────────────────────────────────────────────────────"
 	@echo "  make tinker              - Laravel Tinker"
@@ -45,13 +50,17 @@ help:
 	@echo "  make pint                - Run Laravel Pint (code style)"
 	@echo ""
 	@echo "── Docker Utils ─────────────────────────────────────────────────────"
-	@echo "  make docker-reset        - Stop + remove all containers and volumes"
+	@echo "  make docker-reset        - Stop + remove this project's containers and volumes"
 	@echo "  make docker-prune        - Full Docker system cleanup"
 	@echo "  make docker-check        - Show Docker status"
 	@echo ""
-	@echo "── Production ───────────────────────────────────────────────────────"
-	@echo "  make db-pull             - Pull production DB into local"
-	@echo "  make ssl-renew           - Renew SSL on VPS"
+	@echo "── Fly.io ───────────────────────────────────────────────────────────"
+	@echo "  make fly-deploy          - Deploy to Fly.io"
+	@echo "  make fly-logs            - Stream Fly.io logs"
+	@echo "  make fly-shell           - SSH into the Fly.io app"
+	@echo "  make fly-migrate         - Run central DB migrations on Fly.io"
+	@echo "  make fly-certs-add DOMAIN=school.edu.gh   - Add custom domain + SSL"
+	@echo "  make fly-certs-show DOMAIN=school.edu.gh  - Check SSL cert status"
 	@echo ""
 
 # ── Containers ────────────────────────────────────────────────────────────────
@@ -99,6 +108,13 @@ db-shell:
 
 redis-shell:
 	$(COMPOSE) exec redis redis-cli
+
+db-pull:
+	@[ -n "$(FLY_DB_URL)" ] || (echo "Error: FLY_DB_URL not set."; echo "Get it: fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"; exit 1)
+	@echo "Dumping production Fly Postgres..."
+	pg_dump "$(FLY_DB_URL)" --no-owner --no-privileges \
+		| $(COMPOSE) exec -T postgres psql -U webnova webnova_central
+	@echo "Done."
 
 # ── Laravel ───────────────────────────────────────────────────────────────────
 tinker:
@@ -149,10 +165,7 @@ fe-dev-clean:
 
 # ── Docker Utils ──────────────────────────────────────────────────────────────
 docker-reset:
-	@echo "Stopping all containers..."
-	docker stop $$(docker ps -aq) 2>/dev/null || true
-	docker rm $$(docker ps -aq) 2>/dev/null || true
-	docker volume prune -f
+	$(COMPOSE) down -v
 	@echo "Done. Run 'make build' to rebuild."
 
 docker-prune:
@@ -165,20 +178,23 @@ docker-check:
 	@echo "\nRunning containers:"
 	@docker ps -a
 
-# ── Production ────────────────────────────────────────────────────────────────
-db-pull-dump:
-	@echo "Downloading production database..."
-	@ssh sysadmin@169.239.249.15 "docker exec webnova_mysql mysqldump -u webnova_user -p'WebnovaUserPass2024SecureDB!' webnova_db --single-transaction --quick --lock-tables=false --no-tablespaces" > backend/storage/app/production-db.sql 2>/dev/null || true
-	@echo "Dump saved to backend/storage/app/production-db.sql (size: $$(du -h backend/storage/app/production-db.sql | cut -f1))"
+# ── Fly.io ────────────────────────────────────────────────────────────────────
+fly-deploy:
+	fly deploy --config $(FLY_CONFIG)
 
-db-pull: db-pull-dump
-	@echo "Importing into local PostgreSQL..."
-	$(COMPOSE) exec postgres psql -U webnova -d webnova_central < backend/storage/app/production-db.sql
-	@rm backend/storage/app/production-db.sql
-	@echo "Done."
+fly-logs:
+	fly logs --config $(FLY_CONFIG)
 
-ssl-renew:
-	@echo "Renewing SSL certificates..."
-	@sudo certbot renew --webroot -w /var/www/webnova/certbot/www --quiet
-	@docker restart webnova_nginx
-	@echo "SSL renewed."
+fly-shell:
+	fly ssh console --config $(FLY_CONFIG)
+
+fly-migrate:
+	fly ssh console --config $(FLY_CONFIG) -C "php artisan migrate --force"
+
+fly-certs-add:
+	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-add DOMAIN=school.edu.gh"; exit 1)
+	fly certs add $(DOMAIN) --config $(FLY_CONFIG)
+
+fly-certs-show:
+	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-show DOMAIN=school.edu.gh"; exit 1)
+	fly certs show $(DOMAIN) --config $(FLY_CONFIG)

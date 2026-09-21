@@ -83,26 +83,32 @@
 
           <!-- Image grid -->
           <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-            <button
+            <div
               v-for="item in items"
               :key="item.id"
-              type="button"
-              @click="toggleSelect(item)"
-              class="group relative aspect-square rounded-xl overflow-hidden border-2 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              class="group relative aspect-square rounded-xl overflow-hidden border-2 transition"
               :class="selected?.id === item.id
                 ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-1'
                 : 'border-transparent hover:border-gray-300'"
             >
-              <img
-                :src="getImageUrl(item.path)"
-                :alt="item.original_name"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <!-- Clickable image area -->
+              <button
+                type="button"
+                @click="toggleSelect(item)"
+                class="absolute inset-0 w-full h-full focus:outline-none"
+              >
+                <img
+                  :src="getImageUrl(item.path)"
+                  :alt="item.original_name"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </button>
+
               <!-- Selected overlay -->
               <div
                 v-if="selected?.id === item.id"
-                class="absolute inset-0 bg-blue-500/20 flex items-center justify-center"
+                class="absolute inset-0 bg-blue-500/20 pointer-events-none flex items-center justify-center"
               >
                 <div class="bg-blue-500 rounded-full p-1">
                   <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -110,11 +116,24 @@
                   </svg>
                 </div>
               </div>
+
+              <!-- Delete button (top-right, visible on hover) -->
+              <button
+                type="button"
+                @click.stop="deleteItem(item)"
+                class="absolute top-1.5 right-1.5 z-10 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-700 transition focus:outline-none focus:ring-2 focus:ring-red-500"
+                title="Delete"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
               <!-- Filename tooltip -->
-              <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs p-1.5 truncate opacity-0 group-hover:opacity-100 transition">
+              <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs p-1.5 truncate opacity-0 group-hover:opacity-100 transition pointer-events-none">
                 {{ item.original_name }}
               </div>
-            </button>
+            </div>
           </div>
 
           <!-- Pagination -->
@@ -148,7 +167,7 @@
               Cancel
             </button>
             <button
-              @click="confirm"
+              @click="confirmSelection"
               :disabled="!selected"
               class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -226,6 +245,19 @@ const toggleSelect = (item: MediaItem) => {
   selected.value = selected.value?.id === item.id ? null : item
 }
 
+const deleteItem = async (item: MediaItem) => {
+  if (!window.confirm(`Delete "${item.original_name}"?`)) return
+
+  try {
+    const apiBase = config.public.apiBase
+    await $fetch(`${apiBase}/media/${item.id}`, { method: 'DELETE' })
+    items.value = items.value.filter(i => i.id !== item.id)
+    if (selected.value?.id === item.id) selected.value = null
+  } catch {
+    window.alert('Failed to delete file. Please try again.')
+  }
+}
+
 const handleUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const files = input.files
@@ -249,7 +281,7 @@ const handleUpload = async (event: Event) => {
   }
 }
 
-const confirm = () => {
+const confirmSelection = () => {
   if (selected.value) {
     emit('select', selected.value.path)
     close()

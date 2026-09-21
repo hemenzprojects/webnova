@@ -20,9 +20,11 @@ Route::get('/user', function (Request $request) {
 
 // Public API routes
 Route::prefix('v1')->group(function () {
-    // Media Upload
+    // Media Library
+    Route::get('/media', [MediaController::class, 'index']);
     Route::post('/media/upload', [MediaController::class, 'upload']);
-    Route::post('/media/delete', [MediaController::class, 'delete']);
+    Route::delete('/media/{id}', [MediaController::class, 'destroy']);
+    Route::post('/media/delete', [MediaController::class, 'delete']); // legacy
 
     // Pages
     Route::get('/pages', [PageController::class, 'index']);

@@ -21,7 +21,7 @@ class TenantSeeder extends Seeder
             [
                 'id'     => 'apba',
                 'name'   => 'African Plant Breeders',
-                'domain' => 'africanplantbreeders.edu.gh',
+                'domain' => 'apba.africanplantbreeders.org',
             ],
         ];
 

@@ -98,6 +98,23 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        // Used as the central connection for stancl/tenancy.
+        // Must not have a 'url' key — tenancy clones this config and swaps
+        // only 'database', but a url key would override that swap.
+        'central' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', parse_url(env('DATABASE_URL', ''), PHP_URL_HOST) ?: '127.0.0.1'),
+            'port' => env('DB_PORT', parse_url(env('DATABASE_URL', ''), PHP_URL_PORT) ?: '5432'),
+            'database' => env('DB_DATABASE', ltrim((string) (parse_url(env('DATABASE_URL', ''), PHP_URL_PATH) ?: 'laravel'), '/')),
+            'username' => env('DB_USERNAME', parse_url(env('DATABASE_URL', ''), PHP_URL_USER) ?: 'root'),
+            'password' => env('DB_PASSWORD', urldecode((string) (parse_url(env('DATABASE_URL', ''), PHP_URL_PASS) ?: ''))),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

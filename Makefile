@@ -1,210 +1,223 @@
-.PHONY: help up down restart build shell logs clean install migrate migrate-fresh migrate-rollback seed test tinker composer npm artisan db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link pint stan docker-reset docker-prune docker-check frontend-shell frontend-logs db-pull db-pull-dump ssl-renew
+.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
 
-# Default target
+COMPOSE    = docker compose -f docker-compose.local.yml
+FLY_CONFIG = deploy/fly/fly.toml
+FLY_DB_APP = cms-postgres
+
+# ── Help ──────────────────────────────────────────────────────────────────────
 help:
-	@echo "Available commands:"
-	@echo "  make up              - Start all Docker containers"
-	@echo "  make down            - Stop all Docker containers"
-	@echo "  make restart         - Restart all Docker containers"
-	@echo "  make build           - Build Docker images"
-	@echo "  make shell           - Access Laravel container shell"
-	@echo "  make logs            - View container logs"
-	@echo "  make clean           - Remove all containers, volumes, and images"
-	@echo "  make docker-reset    - Reset Docker (fix build issues)"
-	@echo "  make docker-prune    - Clean up Docker system"
-	@echo "  make docker-check    - Check Docker health"
 	@echo ""
-	@echo "  make frontend-shell  - Access frontend container shell"
-	@echo "  make frontend-logs   - View frontend logs"
+	@echo "── Containers ───────────────────────────────────────────────────────"
+	@echo "  make up                  - Start all containers (detached)"
+	@echo "  make down                - Stop all containers"
+	@echo "  make restart             - Restart all containers"
+	@echo "  make build               - Rebuild image from scratch"
+	@echo "  make rebuild             - Stop, rebuild and restart"
+	@echo "  make logs                - Tail all container logs"
+	@echo "  make shell               - Shell into the app container"
 	@echo ""
-	@echo "  make be-dev          - Start backend development server"
-	@echo "  make fe-dev          - Start frontend development server"
-	@echo "  make fe-dev-clean    - Clean frontend cache and start dev server"
+	@echo "── Database ─────────────────────────────────────────────────────────"
+	@echo "  make migrate             - Run central DB migrations"
+	@echo "  make migrate-fresh       - Fresh central DB (wipes data)"
+	@echo "  make migrate-rollback    - Rollback last migration"
+	@echo "  make seed                - Seed the central DB"
+	@echo "  make tenants-migrate     - Run migrations on all tenant DBs"
+	@echo "  make db-shell            - PostgreSQL shell (central DB)"
+	@echo "  make redis-shell         - Redis CLI"
+	@echo "  make db-pull             - Pull production Fly Postgres into local"
+	@echo "                             Requires: export FLY_DB_URL=<url>"
+	@echo "                             Get url:  fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"
 	@echo ""
-	@echo "  make install         - Install dependencies (composer & npm)"
-	@echo "  make migrate         - Run database migrations"
-	@echo "  make migrate-fresh   - Drop all tables and re-run migrations"
-	@echo "  make migrate-rollback - Rollback last migration"
-	@echo "  make seed            - Run database seeders"
-	@echo "  make test            - Run PHPUnit tests"
-	@echo "  make tinker          - Run Laravel Tinker"
+	@echo "── Laravel ──────────────────────────────────────────────────────────"
+	@echo "  make tinker              - Laravel Tinker"
+	@echo "  make queue               - Start queue worker"
+	@echo "  make storage-link        - Create storage symlink"
+	@echo "  make cache-clear         - Clear application cache"
+	@echo "  make route-clear         - Clear route cache"
+	@echo "  make config-clear        - Clear config cache"
+	@echo "  make view-clear          - Clear view cache"
+	@echo "  make clear-all           - Clear all caches"
+	@echo "  make artisan CMD='...'   - Run any artisan command"
+	@echo "  make composer CMD='...'  - Run composer command"
+	@echo "  make npm CMD='...'       - Run npm command"
 	@echo ""
-	@echo "  make composer CMD='...' - Run composer command"
-	@echo "  make npm CMD='...'      - Run npm command"
-	@echo "  make artisan CMD='...'  - Run artisan command"
+	@echo "── Frontend ─────────────────────────────────────────────────────────"
+	@echo "  make fe-dev              - Start Nuxt dev server (local, no Docker)"
+	@echo "  make fe-dev-clean        - Clean Nuxt cache and start dev server"
 	@echo ""
-	@echo "  make db-shell        - Access MySQL shell"
-	@echo "  make redis-shell     - Access Redis shell"
-	@echo "  make db-pull         - Download & import production database to local"
-	@echo "  make db-pull-dump    - Download production database dump only"
+	@echo "── Testing & Quality ────────────────────────────────────────────────"
+	@echo "  make test                - Run PHPUnit tests"
+	@echo "  make pint                - Run Laravel Pint (code style)"
 	@echo ""
-	@echo "  make cache-clear     - Clear application cache"
-	@echo "  make route-clear     - Clear route cache"
-	@echo "  make config-clear    - Clear config cache"
-	@echo "  make view-clear      - Clear view cache"
-	@echo "  make clear-all       - Clear all caches"
+	@echo "── Docker Utils ─────────────────────────────────────────────────────"
+	@echo "  make docker-reset        - Stop + remove this project's containers and volumes"
+	@echo "  make docker-prune        - Full Docker system cleanup"
+	@echo "  make docker-check        - Show Docker status"
 	@echo ""
-	@echo "  make queue           - Start queue worker"
-	@echo "  make storage-link    - Create storage symlink"
-	@echo "  make pint            - Run Laravel Pint (code style fixer)"
-	@echo "  make ssl-renew       - Renew SSL certificates on production"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "  PRODUCTION — Fly.io  (app: cms-platform)"
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "  make fly-deploy                       - Deploy to Fly.io"
+	@echo "  make fly-logs                         - Stream live logs"
+	@echo "  make fly-shell                        - SSH into the app"
+	@echo "  make fly-migrate                      - Run central DB migrations"
+	@echo "  make fly-tenants-migrate              - Run tenant DB migrations"
+	@echo "  make fly-seed                         - Seed production DB"
+	@echo "  make fly-db                           - Connect to production Postgres (psql)"
+	@echo "  make fly-db-proxy                     - Tunnel Postgres to localhost:5432 (TablePlus)"
+	@echo "  make fly-certs-add DOMAIN=x.edu.gh    - Add custom domain + SSL"
+	@echo "  make fly-certs-show DOMAIN=x.edu.gh   - Check SSL cert status"
+	@echo ""
 
-# Docker commands
+# ── Containers ────────────────────────────────────────────────────────────────
 up:
-	cd backend && ./vendor/bin/sail up -d
+	$(COMPOSE) up -d
 
 down:
-	cd backend && ./vendor/bin/sail down
+	$(COMPOSE) down
 
 restart:
-	cd backend && ./vendor/bin/sail restart
+	$(COMPOSE) restart
 
 build:
-	cd backend && ./vendor/bin/sail build --no-cache
+	$(COMPOSE) build --no-cache
 
-shell:
-	cd backend && ./vendor/bin/sail shell
+rebuild:
+	$(COMPOSE) down
+	$(COMPOSE) build --no-cache
+	$(COMPOSE) up -d
 
 logs:
-	cd backend && ./vendor/bin/sail logs -f
+	$(COMPOSE) logs -f
 
-clean:
-	cd backend && ./vendor/bin/sail down -v --remove-orphans
-	@echo "Cleaned up containers, volumes, and networks"
+shell:
+	$(COMPOSE) exec app sh
 
-# Docker troubleshooting
-docker-reset:
-	@echo "Stopping all containers..."
-	docker stop $$(docker ps -aq) 2>/dev/null || true
-	@echo "Removing all containers..."
-	docker rm $$(docker ps -aq) 2>/dev/null || true
-	@echo "Removing all volumes..."
-	docker volume prune -f
-	@echo "Docker reset complete. Try 'make build' now."
+# ── Database ──────────────────────────────────────────────────────────────────
+migrate:
+	$(COMPOSE) exec app php artisan migrate --force
 
-docker-prune:
-	docker system prune -af --volumes
-	@echo "Docker system cleaned. Restart Docker Desktop and try 'make build'."
+migrate-fresh:
+	$(COMPOSE) exec app php artisan migrate:fresh --force
 
-docker-check:
-	@echo "Checking Docker..."
-	@docker --version
-	@docker info | grep "Server Version" || echo "Docker daemon not running!"
-	@echo "\nChecking containers..."
-	@docker ps -a
-	@echo "\nChecking images..."
-	@docker images | head -10
+migrate-rollback:
+	$(COMPOSE) exec app php artisan migrate:rollback
 
-# Frontend commands
-frontend-shell:
-	docker exec -it backend-frontend-1 sh
+seed:
+	$(COMPOSE) exec app php artisan db:seed --force
 
-#use node 20
-frontend-logs:
-	docker logs -f backend-frontend-1frontend-logs:
+tenants-migrate:
+	$(COMPOSE) exec app php artisan tenants:migrate --force
 
-# Development servers
-be-dev:
-	cd backend && php artisan serve
+db-shell:
+	$(COMPOSE) exec postgres psql -U webnova -d webnova_central
 
+redis-shell:
+	$(COMPOSE) exec redis redis-cli
+
+db-pull:
+	@[ -n "$(FLY_DB_URL)" ] || (echo "Error: FLY_DB_URL not set."; echo "Get it: fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"; exit 1)
+	@echo "Dumping production Fly Postgres..."
+	pg_dump "$(FLY_DB_URL)" --no-owner --no-privileges \
+		| $(COMPOSE) exec -T postgres psql -U webnova webnova_central
+	@echo "Done."
+
+# ── Laravel ───────────────────────────────────────────────────────────────────
+tinker:
+	$(COMPOSE) exec app php artisan tinker
+
+queue:
+	$(COMPOSE) exec app php artisan queue:work
+
+storage-link:
+	$(COMPOSE) exec app php artisan storage:link
+
+cache-clear:
+	$(COMPOSE) exec app php artisan cache:clear
+
+route-clear:
+	$(COMPOSE) exec app php artisan route:clear
+
+config-clear:
+	$(COMPOSE) exec app php artisan config:clear
+
+view-clear:
+	$(COMPOSE) exec app php artisan view:clear
+
+clear-all: cache-clear route-clear config-clear view-clear
+	@echo "All caches cleared"
+
+artisan:
+	$(COMPOSE) exec app php artisan $(CMD)
+
+composer:
+	$(COMPOSE) exec app composer $(CMD)
+
+npm:
+	$(COMPOSE) exec app npm $(CMD)
+
+test:
+	$(COMPOSE) exec app php artisan test
+
+pint:
+	$(COMPOSE) exec app ./vendor/bin/pint
+
+# ── Frontend (local, outside Docker) ─────────────────────────────────────────
 fe-dev:
 	cd frontend && npm run dev
 
 fe-dev-clean:
 	cd frontend && rm -rf .nuxt .output node_modules/.cache && npm run dev
 
-# Installation commands
-install:
-	cd backend && ./vendor/bin/sail composer install
-	cd backend && ./vendor/bin/sail npm install
-	@echo "Dependencies installed successfully"
+# ── Docker Utils ──────────────────────────────────────────────────────────────
+docker-reset:
+	$(COMPOSE) down -v
+	@echo "Done. Run 'make build' to rebuild."
 
-# Database commands
-migrate:
-	cd backend && ./vendor/bin/sail artisan migrate
+docker-prune:
+	docker system prune -af --volumes
+	@echo "Docker system cleaned."
 
-migrate-fresh:
-	cd backend && ./vendor/bin/sail artisan migrate:fresh
+docker-check:
+	@docker --version
+	@docker info | grep "Server Version" || echo "Docker daemon not running!"
+	@echo "\nRunning containers:"
+	@docker ps -a
 
-migrate-rollback:
-	cd backend && ./vendor/bin/sail artisan migrate:rollback
 
-seed:
-	cd backend && ./vendor/bin/sail artisan db:seed
+# ══════════════════════════════════════════════════════════════════════════════
+# PRODUCTION — Fly.io  (app: cms-platform)
+# ══════════════════════════════════════════════════════════════════════════════
+fly-deploy:
+	fly deploy --config $(FLY_CONFIG)
 
-# Testing
-test:
-	cd backend && ./vendor/bin/sail artisan test
+fly-logs:
+	fly logs --config $(FLY_CONFIG)
 
-# Laravel Tinker
-tinker:
-	cd backend && ./vendor/bin/sail artisan tinker
+fly-shell:
+	fly ssh console --config $(FLY_CONFIG)
 
-# Generic commands
-composer:
-	cd backend && ./vendor/bin/sail composer $(CMD)
+fly-migrate:
+	fly ssh console --config $(FLY_CONFIG) -C "php artisan migrate --force"
 
-npm:
-	cd backend && ./vendor/bin/sail npm $(CMD)
+fly-tenants-migrate:
+	fly ssh console --app cms-platform -C "php artisan tenants:migrate --force"
 
-artisan:
-	cd backend && ./vendor/bin/sail artisan $(CMD)
+fly-seed:
+	fly ssh console --app cms-platform -C "php artisan db:seed --force"
 
-# Database shell access
-db-shell:
-	cd backend && ./vendor/bin/sail mysql
+fly-db:
+	fly postgres connect -a $(FLY_DB_APP)
 
-redis-shell:
-	cd backend && ./vendor/bin/sail redis
+fly-db-proxy:
+	@echo "Proxying Fly Postgres to localhost:5432 — connect TablePlus to 127.0.0.1:5432"
+	fly proxy 5432 -a $(FLY_DB_APP)
 
-# Database sync from production
-db-pull-dump:
-	@echo "Downloading production database..."
-	@ssh sysadmin@169.239.249.15 "docker exec webnova_mysql mysqldump -u webnova_user -p'WebnovaUserPass2024SecureDB!' webnova_db --single-transaction --quick --lock-tables=false --no-tablespaces" > backend/storage/app/production-db.sql 2>/dev/null || true
-	@echo "Database dump saved to backend/storage/app/production-db.sql"
-	@echo "Dump size: $$(du -h backend/storage/app/production-db.sql | cut -f1)"
+fly-certs-add:
+	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-add DOMAIN=school.edu.gh"; exit 1)
+	fly certs add $(DOMAIN) --app cms-platform
 
-db-pull: db-pull-dump
-	@echo "Importing database into local MySQL container..."
-	@docker exec -i backend-mysql-1 mysql -u webnova_user -p'MySecureDBPass123!' webnova_db < backend/storage/app/production-db.sql 2>/dev/null
-	@echo "Database imported successfully!"
-	@echo "Verifying import..."
-	@cd backend && ./vendor/bin/sail artisan tinker --execute="echo 'Users: ' . App\Models\User::count(); echo PHP_EOL; echo 'News: ' . (class_exists('App\Models\News') ? App\Models\News::count() : 'N/A'); echo PHP_EOL;"
-	@echo "Cleaning up..."
-	@rm backend/storage/app/production-db.sql
-	@echo "Done! Production database is now in your local environment."
-
-# Cache clearing
-cache-clear:
-	cd backend && ./vendor/bin/sail artisan cache:clear
-
-route-clear:
-	cd backend && ./vendor/bin/sail artisan route:clear
-
-config-clear:
-	cd backend && ./vendor/bin/sail artisan config:clear
-
-view-clear:
-	cd backend && ./vendor/bin/sail artisan view:clear
-
-clear-all: cache-clear route-clear config-clear view-clear
-	@echo "All caches cleared"
-
-# Queue worker
-queue:
-	cd backend && ./vendor/bin/sail artisan queue:work
-
-# Storage link
-storage-link:
-	cd backend && ./vendor/bin/sail artisan storage:link
-
-# Code quality
-pint:
-	cd backend && ./vendor/bin/sail pint
-
-# SSL
-ssl-renew:
-	@echo "Renewing SSL certificates..."
-	@sudo certbot renew --webroot -w /var/www/webnova/certbot/www --quiet
-	@docker restart webnova_nginx
-	@echo "SSL renewed and Nginx reloaded."
+fly-certs-show:
+	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-show DOMAIN=school.edu.gh"; exit 1)
+	fly certs show $(DOMAIN) --app cms-platform

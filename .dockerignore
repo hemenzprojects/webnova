@@ -1,0 +1,5 @@
+backend/.env
+backend/.env.docker
+backend/.env.production.example
+frontend/.env
+frontend/.env.*

@@ -21,6 +21,11 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    private static function tenantDir(string $dir): \Closure
+    {
+        return fn() => (tenancy()->tenant?->id ? tenancy()->tenant->id . '/' : '') . $dir;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -42,7 +47,7 @@ class PageResource extends Resource
                                 Forms\Components\FileUpload::make('featured_image')
                                     ->image()
                                     ->disk('public')
-                                    ->directory('pages/featured')
+                                    ->directory(self::tenantDir('pages/featured'))
                                     ->imageEditor()
                                     ->maxSize(5120),
                                 Forms\Components\Toggle::make('is_published')
@@ -148,7 +153,7 @@ class PageResource extends Resource
                                                     ->image()
                                                     ->required()
                                                     ->disk('public')
-                                                    ->directory('pages/images')
+                                                    ->directory(self::tenantDir('pages/images'))
                                                     ->imageEditor()
                                                     ->maxSize(5120),
                                                 Forms\Components\TextInput::make('alt')
@@ -255,7 +260,7 @@ class PageResource extends Resource
                                                             ->label('Slide Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/carousel')
+                                                            ->directory(self::tenantDir('pages/carousel'))
                                                             ->imageEditor()
                                                             ->maxSize(5120)
                                                             ->required(),
@@ -321,7 +326,7 @@ class PageResource extends Resource
                                                             ->label('Background Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/hero-slider')
+                                                            ->directory(self::tenantDir('pages/hero-slider'))
                                                             ->imageEditor()
                                                             ->maxSize(5120)
                                                             ->required(),
@@ -379,7 +384,7 @@ class PageResource extends Resource
                                                                     ->label('Foreground Image/Icon')
                                                                     ->image()
                                                                     ->disk('public')
-                                                                    ->directory('pages/hero-slider')
+                                                                    ->directory(self::tenantDir('pages/hero-slider'))
                                                                     ->imageEditor(),
                                                                 Forms\Components\Select::make('foregroundPosition')
                                                                     ->label('Foreground Position')
@@ -474,13 +479,13 @@ class PageResource extends Resource
                                                     ->label('Background Image')
                                                     ->image()
                                                     ->disk('public')
-                                                    ->directory('pages/hero')
+                                                    ->directory(self::tenantDir('pages/hero'))
                                                     ->imageEditor(),
                                                 Forms\Components\FileUpload::make('foregroundImage')
                                                     ->label('Foreground Image (Optional)')
                                                     ->image()
                                                     ->disk('public')
-                                                    ->directory('pages/hero')
+                                                    ->directory(self::tenantDir('pages/hero'))
                                                     ->imageEditor(),
                                                 Forms\Components\Select::make('overlay')
                                                     ->options([
@@ -655,7 +660,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public')
                                                             ->helperText('Background image with white overlay'),
                                                     ])
@@ -837,7 +842,7 @@ class PageResource extends Resource
                                                                 Forms\Components\FileUpload::make('circleImage')
                                                                     ->label('Circle Image')
                                                                     ->image()
-                                                                    ->directory('page-builder')
+                                                                    ->directory(self::tenantDir('page-builder'))
                                                                     ->visibility('public'),
                                                                 Forms\Components\Select::make('circleImageSize')
                                                                     ->label('Image Size')
@@ -931,7 +936,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public')
                                                             ->helperText('Background image with overlay'),
                                                         Forms\Components\ColorPicker::make('overlayColor')
@@ -1067,7 +1072,7 @@ class PageResource extends Resource
                                                             ->label('Card Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/cards')
+                                                            ->directory(self::tenantDir('pages/cards'))
                                                             ->imageEditor(),
                                                         Forms\Components\TextInput::make('title')
                                                             ->label('Card Title')
@@ -1228,7 +1233,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public'),
                                                         Forms\Components\Toggle::make('showDecorations')
                                                             ->label('Show Network Decorations')
@@ -1710,7 +1715,7 @@ class PageResource extends Resource
                     ->label('Page Builder')
                     ->icon('heroicon-o-cube')
                     ->color('primary')
-                    ->url(fn (Page $record): string => config('app.frontend_url', 'http://localhost:3000') . "/elementor/{$record->id}")
+                    ->url(fn (Page $record): string => request()->getSchemeAndHttpHost() . "/elementor/{$record->id}")
                     ->openUrlInNewTab()
                     ->visible(fn (Page $record): bool => $record->template_type === 'builder'),
                 Tables\Actions\EditAction::make(),

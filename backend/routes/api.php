@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\ContactFormController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\ThemeController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -59,6 +60,9 @@ Route::prefix('v1')->group(function () {
 
     // Branding
     Route::get('/branding', [BrandingController::class, 'index']);
+
+    // Theme
+    Route::get('/theme', [ThemeController::class, 'index']);
 
     // Menus
     Route::get('/menus', [MenuController::class, 'index']);

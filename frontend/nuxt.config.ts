@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@nuxtjs/tailwindcss'],
 
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/themes', pattern: '**/widgets/*.vue', pathPrefix: false },
+  ],
+
   // Explicitly disable dev mode
   dev: false,
 

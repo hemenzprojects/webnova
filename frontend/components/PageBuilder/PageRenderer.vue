@@ -123,8 +123,15 @@
         <!-- If no columns, render blocks sequentially (backwards compatibility) -->
         <template v-else>
           <template v-for="(block, blockIndex) in section.blocks" :key="block.id || `block-${blockIndex}`">
+            <!-- Theme-overridden widget (short-circuits default rendering) -->
+            <component
+              v-if="getThemeOverride(block.type)"
+              :is="getThemeOverride(block.type)"
+              :data="block.data"
+              :block-id="block.id || `block-${blockIndex}`"
+            />
             <!-- Basic Blocks -->
-            <PageBuilderTextBlock v-if="block.type === 'text_block'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
+            <PageBuilderTextBlock v-else-if="block.type === 'text_block'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderHeading v-else-if="block.type === 'heading'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderImage v-else-if="block.type === 'image'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderButton v-else-if="block.type === 'button'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
@@ -172,7 +179,7 @@ const props = defineProps<{
   blocks: any[]
 }>()
 
-const { sortBlocks, transformImageUrl } = usePageBuilder()
+const { sortBlocks, transformImageUrl, getThemeOverride } = usePageBuilder()
 
 const groupedSections = computed(() => {
   const blocks = sortBlocks(props.blocks || [])

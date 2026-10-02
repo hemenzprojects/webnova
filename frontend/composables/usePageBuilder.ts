@@ -1,5 +1,6 @@
 export const usePageBuilder = () => {
   const { getImageUrl } = useImageUrl()
+  const { resolveWidget } = useTheme()
 
   // Component registry mapping block types to Vue component names
   const componentMap: Record<string, string> = {
@@ -40,7 +41,20 @@ export const usePageBuilder = () => {
    * Get the Vue component name for a block type
    */
   const getComponentName = (blockType: string): string => {
-    return componentMap[blockType] || 'PageBuilderUnknown'
+    const fallback = componentMap[blockType] || 'PageBuilderUnknown'
+    return resolveWidget(blockType, fallback)
+  }
+
+  /**
+   * Returns a theme-specific override component name for a block type,
+   * or null if the active theme doesn't override it. Used by PageRenderer
+   * to short-circuit the default v-if chain when a theme provides its own
+   * widget for this block type.
+   */
+  const getThemeOverride = (blockType: string): string | null => {
+    const fallback = componentMap[blockType] || ''
+    const resolved = resolveWidget(blockType, fallback)
+    return resolved !== fallback ? resolved : null
   }
 
   /**
@@ -64,6 +78,7 @@ export const usePageBuilder = () => {
 
   return {
     getComponentName,
+    getThemeOverride,
     transformImageUrl,
     sortBlocks,
   }

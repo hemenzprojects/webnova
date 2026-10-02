@@ -1,0 +1,8 @@
+{
+  "slug": "edubright",
+  "name": "Edubright",
+  "description": "Purple + lavender education theme.",
+  "widgets": {
+    "hero": "EdubrightHero"
+  }
+}

@@ -16,8 +16,18 @@ class ServiceController extends Controller
             $query->where('is_featured', true);
         }
 
-        $services = $query->orderBy('order')
-            ->select('id', 'name', 'slug', 'description', 'icon', 'featured_image', 'is_featured', 'order')
+        if ($request->get('sort') === 'name') {
+            $query->orderBy('name');
+        } else {
+            $query->orderBy('order');
+        }
+
+        if ($request->filled('limit')) {
+            $query->limit(max(1, (int) $request->limit));
+        }
+
+        $services = $query
+            ->select('id', 'name', 'slug', 'description', 'icon', 'category', 'price_label', 'featured_image', 'is_featured', 'order')
             ->get();
 
         return response()->json($services);

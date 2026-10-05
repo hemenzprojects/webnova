@@ -14,7 +14,11 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user
+        if (User::where('email', 'admin@webnova.edu.gh')->exists()) {
+            $this->command->warn('Central admin already exists, skipping.');
+            return;
+        }
+
         User::create([
             'name' => 'Admin',
             'email' => 'admin@webnova.edu.gh',

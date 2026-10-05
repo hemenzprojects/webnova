@@ -12,7 +12,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->trustProxies(at: '*');
+        $middleware->append(
+            \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
+        );
+        $middleware->alias([
+            'plugin' => \App\Http\Middleware\EnsurePluginActive::class,
+            'admin.can' => \App\Http\Middleware\EnsureAdminCan::class,
+        ]);
+        $middleware->api(append: [
+            \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

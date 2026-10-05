@@ -22,7 +22,7 @@
         >
           <!-- Image -->
           <img
-            :src="image.url"
+            :src="getImageUrl(image.url) || ''"
             :alt="image.alt || image.caption || `Gallery image ${index + 1}`"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
@@ -86,7 +86,7 @@
           <div class="relative max-w-7xl max-h-[90vh] mx-auto px-16" @click.stop>
             <img
               v-if="data.images && data.images[currentImageIndex]"
-              :src="data.images[currentImageIndex].url"
+              :src="getImageUrl(data.images[currentImageIndex].url) || ''"
               :alt="data.images[currentImageIndex].alt || data.images[currentImageIndex].caption"
               class="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
@@ -127,6 +127,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+const { getImageUrl } = useImageUrl()
 
 interface GalleryImage {
   url: string

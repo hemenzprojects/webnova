@@ -3,6 +3,16 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@nuxtjs/tailwindcss'],
 
+  components: [
+    // Blocks and theme widgets are rendered by name (<component :is="...">),
+    // which only resolves for globally registered components
+    { path: '~/components/PageBuilder', prefix: 'PageBuilder', global: true },
+    // Folder prefixes stay on: templates use PageBuilderHero, ElementorWidget, ...
+    { path: '~/components' },
+    // Theme widgets are referenced by file name only (e.g. EdubrightHero)
+    { path: '~/themes', pattern: '**/widgets/*.vue', pathPrefix: false, global: true },
+  ],
+
   // Explicitly disable dev mode
   dev: false,
 

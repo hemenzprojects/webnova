@@ -1,5 +1,6 @@
 export const usePageBuilder = () => {
   const { getImageUrl } = useImageUrl()
+  const { resolveWidget } = useTheme()
 
   // Component registry mapping block types to Vue component names
   const componentMap: Record<string, string> = {
@@ -34,14 +35,47 @@ export const usePageBuilder = () => {
     dynamic_members: 'PageBuilderDynamicMembers',
     dynamic_team_members: 'PageBuilderDynamicTeamMembers',
     dynamic_carousel: 'PageBuilderDynamicCarousel',
+
+    // Section blocks rendered by name (see getNamedComponent)
+    about_split: 'PageBuilderAboutSplit',
+    logo_strip: 'PageBuilderLogoStrip',
+    feature_split: 'PageBuilderFeatureSplit',
+    testimonials: 'PageBuilderTestimonials',
+    cta_band: 'PageBuilderCtaBand',
+    faq: 'PageBuilderFaq',
+    membership_form: 'PageBuilderMembershipForm',
   }
+
+  // Blocks with no hand-written branch in PageRenderer / Widget
+  const NAMED_BLOCKS = ['about_split', 'logo_strip', 'feature_split', 'testimonials', 'cta_band', 'faq', 'membership_form']
 
   /**
    * Get the Vue component name for a block type
    */
   const getComponentName = (blockType: string): string => {
-    return componentMap[blockType] || 'PageBuilderUnknown'
+    const fallback = componentMap[blockType] || 'PageBuilderUnknown'
+    return resolveWidget(blockType, fallback)
   }
+
+  /**
+   * Returns a theme-specific override component name for a block type,
+   * or null if the active theme doesn't override it. Used by PageRenderer
+   * to short-circuit the default v-if chain when a theme provides its own
+   * widget for this block type.
+   */
+  const getThemeOverride = (blockType: string): string | null => {
+    const fallback = componentMap[blockType] || ''
+    const resolved = resolveWidget(blockType, fallback)
+    return resolved !== fallback ? resolved : null
+  }
+
+  /**
+   * Component name for a block that renders through <component :is>: the
+   * active theme's override, or one of the NAMED_BLOCKS. Null means the
+   * caller's own rendering applies.
+   */
+  const getNamedComponent = (blockType: string): string | null =>
+    getThemeOverride(blockType) || (NAMED_BLOCKS.includes(blockType) ? componentMap[blockType] : null)
 
   /**
    * Transform image path to full URL
@@ -64,6 +98,8 @@ export const usePageBuilder = () => {
 
   return {
     getComponentName,
+    getThemeOverride,
+    getNamedComponent,
     transformImageUrl,
     sortBlocks,
   }

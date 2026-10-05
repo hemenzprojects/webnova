@@ -8,6 +8,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
 use Filament\Panel;
+use Filament\View\PanelsRenderHook;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets;
@@ -22,7 +23,7 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel
             ->default()
             ->id('admin')
             ->path('admin')
@@ -53,6 +54,22 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            // Functional areas: tabs in the top bar, the area's items in the sidebar
+            ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.admin.areas-topbar'))
+            ->renderHook(PanelsRenderHook::SIDEBAR_NAV_START, fn () => view('filament.admin.areas-sidebar'));
+
+        // Each plugin's Filament classes; they hide themselves while the plugin is off
+        foreach (config('plugins.plugins', []) as $class) {
+            $plugin = app($class);
+            $path = $plugin->filamentPath();
+            $namespace = $plugin->filamentNamespace();
+            $panel
+                ->discoverResources(in: "{$path}/Resources", for: "{$namespace}\\Resources")
+                ->discoverPages(in: "{$path}/Pages", for: "{$namespace}\\Pages")
+                ->discoverWidgets(in: "{$path}/Widgets", for: "{$namespace}\\Widgets");
+        }
+
+        return $panel;
     }
 }

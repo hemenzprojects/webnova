@@ -6,12 +6,15 @@ interface Props {
   mode?: 'desktop' | 'mobile' | 'dropdown'
   currentPath?: string
   depth?: number
+  // 'dark' styles the top level for a coloured background
+  variant?: 'light' | 'dark'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'desktop',
   currentPath: '',
-  depth: 0
+  depth: 0,
+  variant: 'light'
 })
 
 const route = useRoute()
@@ -90,11 +93,15 @@ const hasChildren = (item: MenuItem) => item.children && item.children.length > 
           :class="[
             'flex items-center gap-2 px-4 py-2 transition-colors',
             depth === 0
-              ? 'text-gray-700 hover:text-primary-600 font-medium rounded-md hover:bg-gray-50'
+              ? (variant === 'dark'
+                ? 'text-white font-medium rounded-md hover:bg-white/10'
+                : 'text-gray-700 hover:text-primary-600 font-medium rounded-md hover:bg-gray-50')
               : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600',
             isActive(item) ? 'text-primary-600 font-semibold' : '',
             hasActiveDescendant(item) && !isActive(item) ? 'text-primary-500' : '',
-            item.type === 'category' ? 'font-semibold text-gray-900 cursor-default' : 'cursor-pointer',
+            item.type === 'category'
+              ? (depth === 0 && variant === 'dark' ? 'font-semibold cursor-default' : 'font-semibold text-gray-900 cursor-default')
+              : 'cursor-pointer',
             item.css_class || ''
           ]"
           :aria-current="isActive(item) ? 'page' : undefined"

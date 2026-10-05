@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\ServiceResource\Pages;
 use App\Filament\Resources\ServiceResource\RelationManagers;
 use App\Models\Service;
@@ -15,6 +16,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ServiceResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
+    protected static ?int $navigationSort = 4;
+
     protected static ?string $model = Service::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -33,12 +40,21 @@ class ServiceResource extends Resource
                 Forms\Components\Textarea::make('content')
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('icon'),
+                Forms\Components\TextInput::make('category')
+                    ->helperText('Shown on course-style cards, e.g. "Business"'),
+                Forms\Components\TextInput::make('price_label')
+                    ->label('Price label')
+                    ->helperText('Shown on course-style cards, e.g. "Free" or "Premium"'),
                 Forms\Components\FileUpload::make('featured_image')
                     ->image(),
                 Forms\Components\Toggle::make('is_active')
                     ->required(),
                 Forms\Components\Toggle::make('is_featured')
                     ->required(),
+                Forms\Components\Toggle::make('show_sidebar')
+                    ->label('Show sidebar')
+                    ->helperText('List the other services in a sidebar on this service\'s page')
+                    ->default(true),
                 Forms\Components\TextInput::make('order')
                     ->required()
                     ->numeric()
@@ -60,6 +76,9 @@ class ServiceResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('is_featured')
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('show_sidebar')
+                    ->label('Sidebar')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('order')
                     ->numeric()

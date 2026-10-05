@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\MenuResource\Pages;
 use App\Filament\Resources\MenuResource\RelationManagers;
 use App\Models\Menu;
@@ -14,11 +15,13 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MenuResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'appearance';
+
     protected static ?string $model = Menu::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';
-
-    protected static ?string $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 3;
 

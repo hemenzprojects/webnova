@@ -29,12 +29,14 @@ class Branding extends Model
         'linkedin_url',
         'instagram_url',
         'youtube_url',
+        'social_links',
         'meta_description',
         'meta_keywords',
     ];
 
     protected $casts = [
         'meta_keywords' => 'array',
+        'social_links' => 'array',
     ];
 
     /**

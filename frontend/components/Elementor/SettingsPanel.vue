@@ -177,6 +177,14 @@
             </div>
           </div>
         </div>
+
+        <!-- Advanced: the same options widgets have (anchor, visibility, border, ...) -->
+        <ElementorStyleSettings
+          v-else-if="activeTab === 'Advanced'"
+          tab="Advanced"
+          :model-value="elementData._style"
+          @update="updateSetting('_style', $event)"
+        />
       </div>
 
       <!-- Widget Settings -->
@@ -2741,6 +2749,19 @@
                 <span class="text-sm font-medium text-gray-700">Show Description</span>
               </label>
             </div>
+
+            <!-- Show Read More -->
+            <div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  :checked="elementData.showReadMore ?? true"
+                  @change="updateData('showReadMore', ($event.target as HTMLInputElement).checked)"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                />
+                <span class="text-sm font-medium text-gray-700">Show Read More</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -3154,11 +3175,49 @@
           />
         </div>
 
+        <!-- Section blocks described by a schema (utils/blockSchemas.ts) -->
+        <div v-else-if="widgetType && BLOCK_SCHEMAS[widgetType]">
+          <ElementorSchemaSettings
+            v-if="activeTab === 'Content'"
+            :schema="BLOCK_SCHEMAS[widgetType]"
+            :data="elementData"
+            @update="emit('update', $event)"
+          />
+        </div>
+
         <!-- Generic Widget (for widgets without specific settings) -->
-        <div v-else>
+        <div v-else-if="activeTab === 'Content'">
           <div class="text-center py-8">
             <p class="text-sm text-gray-500">Settings for this widget are managed in the Filament admin panel.</p>
           </div>
+        </div>
+
+        <!-- Style and Advanced settings shared by every widget (data._style) -->
+        <div
+          v-if="activeTab === 'Style' || activeTab === 'Advanced'"
+          :class="activeTab === 'Style' && WIDGETS_WITH_OWN_STYLE.includes(widgetType || '') ? 'pt-4 mt-4 border-t border-gray-200' : ''"
+        >
+          <p
+            v-if="activeTab === 'Style' && WIDGETS_WITH_OWN_STYLE.includes(widgetType || '')"
+            class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3"
+          >
+            General style
+          </p>
+          <ElementorStyleSettings
+            :tab="activeTab"
+            :model-value="elementData._style"
+            @update="emit('update', { _style: $event })"
+          />
+        </div>
+
+        <!-- Extra fields used by theme designs for this block -->
+        <div v-if="activeTab === 'Content' && widgetType && BLOCK_EXTRAS[widgetType]" class="pt-4 mt-4 border-t border-gray-200">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Theme options</p>
+          <ElementorSchemaSettings
+            :schema="BLOCK_EXTRAS[widgetType]"
+            :data="elementData"
+            @update="emit('update', $event)"
+          />
         </div>
       </div>
     </div>
@@ -3166,6 +3225,11 @@
 </template>
 
 <script setup lang="ts">
+import { BLOCK_SCHEMAS, BLOCK_EXTRAS } from '~/utils/blockSchemas'
+
+// Widgets with their own fields on the Style tab, shown above the shared ones
+const WIDGETS_WITH_OWN_STYLE = ['heading', 'button', 'hero', 'hero_split', 'hero_dynamic', 'dynamic_carousel']
+
 const props = defineProps<{
   selectedElement: { type: 'section' | 'column' | 'widget'; id: string }
   sections: any[]
@@ -3175,10 +3239,8 @@ const emit = defineEmits(['update', 'close'])
 
 const activeTab = ref('Content')
 const availableTabs = computed(() => {
-  if (props.selectedElement.type === 'section') {
-    return ['Content', 'Style', 'Advanced']
-  }
-  return ['Content', 'Style']
+  // Every element has the shared Style and Advanced settings
+  return ['Content', 'Style', 'Advanced']
 })
 
 // Get element data

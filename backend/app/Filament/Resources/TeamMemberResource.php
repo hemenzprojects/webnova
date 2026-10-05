@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\TeamMemberResource\Pages;
 use App\Filament\Resources\TeamMemberResource\RelationManagers;
 use App\Models\TeamMember;
@@ -15,6 +16,10 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TeamMemberResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
     protected static ?string $model = TeamMember::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
@@ -23,7 +28,7 @@ class TeamMemberResource extends Resource
 
     protected static ?string $modelLabel = 'Team Member';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 6;
 
     public static function form(Form $form): Form
     {

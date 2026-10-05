@@ -33,7 +33,7 @@
             <div v-if="slide.backgroundImage" class="space-y-2">
               <div class="relative border border-gray-200 rounded-md p-2 group">
                 <img
-                  :src="slide.backgroundImage"
+                  :src="getImageUrl(slide.backgroundImage) || ''"
                   alt="Background preview"
                   class="w-full h-32 object-cover rounded"
                   @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage not found%3C/text%3E%3C/svg%3E'"
@@ -276,7 +276,7 @@
               <div v-if="slide.featuredImage" class="space-y-2">
                 <div class="relative border border-gray-200 rounded-md p-2 group">
                   <img
-                    :src="slide.featuredImage"
+                    :src="getImageUrl(slide.featuredImage) || ''"
                     alt="Featured preview"
                     class="w-full h-32 object-cover rounded"
                     @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage not found%3C/text%3E%3C/svg%3E'"
@@ -440,6 +440,8 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+
+const { getImageUrl } = useImageUrl()
 
 const props = defineProps<{
   widget: any

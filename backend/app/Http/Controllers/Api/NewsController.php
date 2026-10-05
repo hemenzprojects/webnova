@@ -20,6 +20,10 @@ class NewsController extends Controller
             $query->where('category', $request->category);
         }
 
+        if ($request->get('sort') === 'featured') {
+            $query->orderBy('is_featured', 'desc');
+        }
+
         $news = $query->orderBy('published_at', 'desc')
             ->select('id', 'title', 'slug', 'excerpt', 'featured_image', 'category', 'published_at', 'is_featured')
             ->paginate($request->get('per_page', 10));

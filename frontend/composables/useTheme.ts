@@ -29,7 +29,7 @@ export const useTheme = () => {
     if (!process.server) return {}
     const event = useRequestEvent()
     const host = event?.node?.req?.headers?.host
-    return host ? { Host: host } : {}
+    return host ? { Host: host, 'X-Forwarded-Host': host } : {}
   }
 
   const load = async () => {
@@ -53,6 +53,8 @@ export const useTheme = () => {
     vars['--font-heading'] = t.tokens.typography?.headingFont || ''
     vars['--font-body'] = t.tokens.typography?.bodyFont || ''
     vars['--font-heading-weight'] = t.tokens.typography?.headingWeight || '700'
+    vars['--nav-transform'] = t.tokens.typography?.navTransform || 'none'
+    vars['--nav-letter-spacing'] = t.tokens.typography?.navLetterSpacing || 'normal'
     vars['--radius-card'] = t.tokens.radius?.card || '12px'
     vars['--radius-button'] = t.tokens.radius?.button || '8px'
     vars['--radius-pill'] = t.tokens.radius?.pill || '9999px'

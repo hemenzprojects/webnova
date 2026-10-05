@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\BrandingResource\Pages;
 use App\Filament\Resources\BrandingResource\RelationManagers;
 use App\Models\Branding;
@@ -12,14 +13,21 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Support\SocialPlatforms;
 
 class BrandingResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'appearance';
+
     protected static ?string $model = Branding::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
 
     protected static ?string $navigationLabel = 'Branding & Settings';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Branding';
 
@@ -154,40 +162,30 @@ class BrandingResource extends Resource
 
                 // Social Media Section
                 Forms\Components\Section::make('Social Media Links')
-                    ->description('Your social media profiles')
+                    ->description('Your social media profiles. Used wherever social icons are shown, such as the header and the footer.')
                     ->schema([
-                        Forms\Components\TextInput::make('facebook_url')
-                            ->label('Facebook')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://facebook.com/yourpage')
-                            ->prefix('facebook.com/'),
-                        Forms\Components\TextInput::make('twitter_url')
-                            ->label('Twitter/X')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://twitter.com/yourhandle')
-                            ->prefix('twitter.com/'),
-                        Forms\Components\TextInput::make('linkedin_url')
-                            ->label('LinkedIn')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://linkedin.com/company/yourcompany')
-                            ->prefix('linkedin.com/'),
-                        Forms\Components\TextInput::make('instagram_url')
-                            ->label('Instagram')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://instagram.com/yourhandle')
-                            ->prefix('instagram.com/'),
-                        Forms\Components\TextInput::make('youtube_url')
-                            ->label('YouTube')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://youtube.com/c/yourchannel')
-                            ->prefix('youtube.com/'),
+                        Forms\Components\Repeater::make('social_links')
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\Select::make('platform')
+                                    ->label('Icon')
+                                    ->options(SocialPlatforms::selectOptions())
+                                    ->allowHtml()
+                                    ->required()
+                                    ->native(false),
+                                Forms\Components\TextInput::make('url')
+                                    ->label('Link')
+                                    ->required()
+                                    ->url()
+                                    ->maxLength(255)
+                                    ->placeholder('https://'),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->maxItems(12)
+                            ->reorderable()
+                            ->addActionLabel('Add social media icon'),
                     ])
-                    ->columns(2)
                     ->collapsible(),
 
                 // SEO Section

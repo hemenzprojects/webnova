@@ -35,7 +35,19 @@ export const usePageBuilder = () => {
     dynamic_members: 'PageBuilderDynamicMembers',
     dynamic_team_members: 'PageBuilderDynamicTeamMembers',
     dynamic_carousel: 'PageBuilderDynamicCarousel',
+
+    // Section blocks rendered by name (see getNamedComponent)
+    about_split: 'PageBuilderAboutSplit',
+    logo_strip: 'PageBuilderLogoStrip',
+    feature_split: 'PageBuilderFeatureSplit',
+    testimonials: 'PageBuilderTestimonials',
+    cta_band: 'PageBuilderCtaBand',
+    faq: 'PageBuilderFaq',
+    membership_form: 'PageBuilderMembershipForm',
   }
+
+  // Blocks with no hand-written branch in PageRenderer / Widget
+  const NAMED_BLOCKS = ['about_split', 'logo_strip', 'feature_split', 'testimonials', 'cta_band', 'faq', 'membership_form']
 
   /**
    * Get the Vue component name for a block type
@@ -56,6 +68,14 @@ export const usePageBuilder = () => {
     const resolved = resolveWidget(blockType, fallback)
     return resolved !== fallback ? resolved : null
   }
+
+  /**
+   * Component name for a block that renders through <component :is>: the
+   * active theme's override, or one of the NAMED_BLOCKS. Null means the
+   * caller's own rendering applies.
+   */
+  const getNamedComponent = (blockType: string): string | null =>
+    getThemeOverride(blockType) || (NAMED_BLOCKS.includes(blockType) ? componentMap[blockType] : null)
 
   /**
    * Transform image path to full URL
@@ -79,6 +99,7 @@ export const usePageBuilder = () => {
   return {
     getComponentName,
     getThemeOverride,
+    getNamedComponent,
     transformImageUrl,
     sortBlocks,
   }

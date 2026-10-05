@@ -62,7 +62,7 @@ webnova/
 
 ### Adding a New Tenant
 
-1. Log into the central admin → create Tenant record with `id`, `name`, `domain`
+1. Log into the central admin → Platform → Tenants → New: `id`, `name`, `domain` and the first administrator's email and password
 2. The `TenantCreated` event pipeline auto-creates the database and runs tenant migrations
 3. Run `php artisan tenants:migrate` if the tenant DB already existed without migrations
 4. Or use `make seed` to recreate the default `garnet` and `apba` tenants locally
@@ -172,9 +172,11 @@ const ssrHeaders = (): Record<string, string> => {
   if (!process.server) return {}
   const event = useRequestEvent()
   const host = event?.node?.req?.headers?.host
-  return host ? { Host: host } : {}
+  return host ? { Host: host, 'X-Forwarded-Host': host } : {}
 }
 ```
+
+`X-Forwarded-Host` is the header that actually works: Node's built-in `fetch` silently drops a custom `Host` header, so without it SSR requests reach Laravel as `127.0.0.1` and every tenant API call 404s. Laravel honours it because `trustProxies(at: '*')` is set in `bootstrap/app.php`.
 
 ## Media Library
 
@@ -183,6 +185,36 @@ const ssrHeaders = (): Record<string, string> => {
 - `DELETE /api/v1/media/{id}` — deletes file from storage + DB record
 
 The `MediaLibrary.vue` modal is used inside `Elementor/ImageUpload.vue`. It lets tenants pick from previously uploaded files or upload new ones.
+
+## Themes
+
+A tenant picks a theme under **Customize → Themes** in their admin. Installing one works like a WordPress demo import: the current content is backed up, cleared, and replaced with the theme's starter pages, menus, settings and sample content. Users are never touched.
+
+- **Registry and design tokens:** `backend/config/themes.php` (colours, fonts, radius). `frontend/plugins/theme.ts` turns the active theme's tokens into CSS variables (`--color-primary`, `--color-surface-muted`, `--font-heading`, …). Tailwind's `primary`/`accent` read those variables, so `bg-primary` follows the theme.
+- **Starter package:** `backend/resources/themes/{slug}/starter.json` plus `images/`. Strings `"theme:{file}"` become stored paths; dates like `"-3 days"` are relative; footer menu widgets reference menus by `"menu": "<location>"`. Blocks are listed as `{type, data}` and expanded into the editor's section/column format. Image credits: `backend/resources/themes/CREDITS.md`.
+- **Installer:** `App\Services\ThemeInstaller` (clears the tables in `CONTENT_TABLES`). CLI: `php artisan tenants:install-theme {tenant} {theme}` and `tenants:restore-theme {tenant} [file]`. Backups go to `storage/app/private/theme-backups/{tenant}/`.
+- **Theme widgets:** `frontend/themes/{slug}/manifest.json` maps a block type to an override component in `frontend/themes/{slug}/widgets/`. Blocks without a hand-written form in `SettingsPanel.vue` are described in `frontend/utils/blockSchemas.ts`.
+- **Widget styles:** every widget and section has shared Style and Advanced settings in the editor (colours, fonts, alignment, corner radius, spacing, background, border, shadow, max width, hide per device, anchor ID, CSS class), stored as `data._style` (sections: `settings._style`). `PageBuilder/BlockWrapper.vue` applies them by overriding the theme's CSS variables for that widget (`utils/blockStyle.ts`), so new blocks should style themselves with those variables (`var(--color-primary)`, `var(--font-heading)`, `var(--radius-card)`, …) rather than fixed colours.
+- Block components and theme widgets are registered **globally** in `nuxt.config.ts`, because they are rendered by name (`<component :is>`). Keep folder prefixes on for `components/` — templates use `PageBuilderHero`, `ElementorWidget`, etc.
+
+## Admin Areas, Users and Roles
+
+The admin is organised into **functional areas**: tabs in the top bar (Content, Appearance, plugin areas such as Membership, System Administration; Platform on the central domain). The sidebar lists only the current area's items (`App\Admin\Areas`; views in `resources/views/filament/admin/`).
+
+- Every Filament resource uses `App\Admin\Concerns\InFunctionalArea` and every page `InFunctionalAreaPage`, declaring `protected static string $area = '...'`. **New resources and pages must do the same**, or they will not appear and will not be permission-checked.
+- **Roles are per site** (tenant `roles` table; `users.role_id`), managed under System Administration → Roles. A role maps each menu item's key (the Filament slug, e.g. `news`, `header-settings`) to `view` (read-only) or `manage` (create, edit, delete, save). The built-in Administrator role (`is_admin`) can do everything and cannot be deleted; the last Administrator cannot be removed. `App\Admin\Access` answers "can this user view/manage X".
+- Pages with forms disable the form and hide Save for view-only roles (`->disabled(! static::canManage())`, empty `getFormActions()`, `$this->authorizeManage()` in `save()`). Custom actions that change data use `->authorize(fn () => static::canManage())`.
+- A site's users need a role to sign in (`User::canAccessPanel`). Central users (platform admins) have no roles and only see the Platform area.
+- API endpoints used by admin tools run on the admin session: `->middleware(['web', 'admin.can:{key},{view|manage}'])`. The page editor and media library (`/api/v1/pages/{id}/edit|blocks|publish`, `/api/v1/media…`) work this way, so the Nuxt editor sends `xsrfHeaders()` (`frontend/utils/xsrf.ts`) on those calls.
+
+## Plugins
+
+Optional feature modules that each site's admin activates under Customize → Plugins (`tenant_plugins` table, which also holds each plugin's encrypted settings). Every plugin is available to every site for now; `Plugin::isAvailableFor($tenant)` is where a subscription check for paid plugins will go.
+
+- A plugin is a class extending `App\Plugins\Plugin`, registered in `config/plugins.php`, with its code in `app/Plugins/{Name}/`. Filament classes go in `app/Plugins/{Name}/Filament/{Resources,Pages,Widgets}` (auto-discovered), use the area traits (see Admin Areas) with `protected static ?string $plugin = '{key}'` so they hide while the plugin is off, and the plugin declares its top-bar tab in `Plugin::area()`. Plugin widgets set `$isDiscovered = false` to stay off the main dashboard.
+- API routes use the `plugin:{key}` middleware (404 while inactive). `GET /api/v1/plugins` lists active keys; the page editor hides blocks whose `plugin` is inactive.
+- Plugin tables are normal tenant migrations and are **not** cleared by theme installs; after a theme install, active plugins' `activated()` runs again to restore anything they add (e.g. the Membership page).
+- **Membership** (`app/Plugins/Membership`): dashboard with filters, registrations, membership types (fee + period), a form builder (`Support/FormSchema` defines the JSON shape and builds validation rules), Paystack payments (`Support/Paystack`, `Support/Registrar`), and the `membership_form` page block. Each registration stores a snapshot of the form it was submitted with. Paystack returns payers to `/membership/complete`; the webhook is `POST /api/v1/membership/paystack/webhook`.
 
 ## Tenancy Bootstrapper Notes
 

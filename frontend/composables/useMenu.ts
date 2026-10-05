@@ -21,12 +21,20 @@ export const useMenu = () => {
   const config = useRuntimeConfig()
   const apiBase = process.server ? config.apiBaseSSR : config.public.apiBase
 
+  // Forward the original Host on SSR so Laravel resolves the right tenant
+  const ssrHeaders = (): Record<string, string> => {
+    if (!process.server) return {}
+    const event = useRequestEvent()
+    const host = event?.node?.req?.headers?.host
+    return host ? { Host: host, 'X-Forwarded-Host': host } : {}
+  }
+
   /**
    * Fetch all active menus
    */
   const fetchMenus = async (): Promise<Record<string, Menu>> => {
     try {
-      return await $fetch(`${apiBase}/menus`)
+      return await $fetch(`${apiBase}/menus`, { headers: ssrHeaders() })
     } catch (error) {
       console.error('Error fetching menus:', error)
       return {}
@@ -38,7 +46,9 @@ export const useMenu = () => {
    */
   const fetchMenuByLocation = async (location: string): Promise<Menu | null> => {
     try {
-      return await $fetch(`${apiBase}/menus/${location}`)
+      // The API answers with an empty body when no menu exists at this location
+      const menu = await $fetch<Menu | null>(`${apiBase}/menus/${location}`, { headers: ssrHeaders() })
+      return menu?.items ? menu : null
     } catch (error) {
       console.error(`Error fetching menu for location "${location}":`, error)
       return null

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\PageResource\Pages;
 use App\Filament\Resources\PageResource\RelationManagers;
 use App\Models\Page;
@@ -17,6 +18,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PageResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $model = Page::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -1712,6 +1719,7 @@ class PageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('visual_editor')
+                    ->authorize(fn () => static::canManage())
                     ->label('Page Builder')
                     ->icon('heroicon-o-cube')
                     ->color('primary')

@@ -1,4 +1,4 @@
-.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
+.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-clean docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
 
 COMPOSE    = docker compose -f docker-compose.local.yml
 FLY_CONFIG = deploy/fly/fly.toml
@@ -51,7 +51,8 @@ help:
 	@echo ""
 	@echo "── Docker Utils ─────────────────────────────────────────────────────"
 	@echo "  make docker-reset        - Stop + remove this project's containers and volumes"
-	@echo "  make docker-prune        - Full Docker system cleanup"
+	@echo "  make docker-clean        - Safe cleanup: build cache, stopped containers, dangling images (keeps volumes)"
+	@echo "  make docker-prune        - Full Docker system cleanup (DELETES ALL images + unused volumes)"
 	@echo "  make docker-check        - Show Docker status"
 	@echo ""
 	@echo ""
@@ -174,6 +175,12 @@ fe-dev-clean:
 docker-reset:
 	$(COMPOSE) down -v
 	@echo "Done. Run 'make build' to rebuild."
+
+docker-clean:
+	docker builder prune -f
+	docker container prune -f
+	docker image prune -f
+	@docker system df
 
 docker-prune:
 	docker system prune -af --volumes

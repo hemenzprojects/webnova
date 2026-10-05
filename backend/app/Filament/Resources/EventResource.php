@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
@@ -15,6 +16,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class EventResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $model = Event::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -67,6 +74,10 @@ class EventResource extends Resource
                     ->required(),
                 Forms\Components\Toggle::make('is_featured')
                     ->required(),
+                Forms\Components\Toggle::make('show_sidebar')
+                    ->label('Show sidebar')
+                    ->helperText('List other events in a sidebar on this page')
+                    ->default(true),
             ]);
     }
 
@@ -94,6 +105,9 @@ class EventResource extends Resource
                 Tables\Columns\IconColumn::make('is_published')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('is_featured')
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('show_sidebar')
+                    ->label('Sidebar')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

@@ -128,6 +128,7 @@ const handleFileSelect = async (event: Event) => {
     const response = await $fetch<{ success: boolean; path: string }>(`${apiBase}/media/upload`, {
       method: 'POST',
       body: formData,
+      headers: xsrfHeaders(),
     })
 
     if (response.success) {

@@ -1,8 +1,10 @@
 {
   "slug": "edubright",
   "name": "Edubright",
-  "description": "Purple + lavender education theme.",
+  "description": "Purple and lavender education theme.",
   "widgets": {
-    "hero": "EdubrightHero"
+    "hero": "EdubrightHero",
+    "dynamic_services": "EdubrightCourses",
+    "dynamic_news": "EdubrightBlog"
   }
 }

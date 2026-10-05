@@ -53,6 +53,8 @@ class TenantSeeder extends Seeder
                     'email'             => 'admin@' . $data['domain'],
                     'password'          => Hash::make('password'),
                     'email_verified_at' => now(),
+                    // Created by the tenant roles migration
+                    'role_id'           => \App\Models\Role::where('is_admin', true)->value('id'),
                 ]);
             });
 

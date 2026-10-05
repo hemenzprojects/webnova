@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(
             \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
         );
+        $middleware->alias([
+            'plugin' => \App\Http\Middleware\EnsurePluginActive::class,
+            'admin.can' => \App\Http\Middleware\EnsureAdminCan::class,
+        ]);
         $middleware->api(append: [
             \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
         ]);

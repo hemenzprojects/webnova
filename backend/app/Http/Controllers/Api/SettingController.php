@@ -17,7 +17,14 @@ class SettingController extends Controller
         }
 
         $settings = $query->get()->mapWithKeys(function ($setting) {
-            return [$setting->key => $setting->value];
+            $value = match ($setting->type) {
+                'boolean' => filter_var($setting->value, FILTER_VALIDATE_BOOLEAN),
+                'number' => (int) $setting->value,
+                'json' => json_decode((string) $setting->value, true),
+                default => $setting->value,
+            };
+
+            return [$setting->key => $value];
         });
 
         return response()->json($settings);

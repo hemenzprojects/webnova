@@ -226,7 +226,7 @@ const fetchMedia = async (page = 1) => {
     const params = new URLSearchParams({ page: String(page) })
     if (search.value) params.set('search', search.value)
 
-    const res = await $fetch<{ data: MediaItem[]; meta: Meta }>(`${apiBase}/media?${params}`)
+    const res = await $fetch<{ data: MediaItem[]; meta: Meta }>(`${apiBase}/media?${params}`, { headers: xsrfHeaders() })
     items.value = res.data
     meta.value = res.meta
   } catch {
@@ -250,7 +250,7 @@ const deleteItem = async (item: MediaItem) => {
 
   try {
     const apiBase = config.public.apiBase
-    await $fetch(`${apiBase}/media/${item.id}`, { method: 'DELETE' })
+    await $fetch(`${apiBase}/media/${item.id}`, { method: 'DELETE', headers: xsrfHeaders() })
     items.value = items.value.filter(i => i.id !== item.id)
     if (selected.value?.id === item.id) selected.value = null
   } catch {
@@ -272,7 +272,7 @@ const handleUpload = async (event: Event) => {
       form.append('image', file)
       form.append('folder', 'media')
 
-      await $fetch(`${apiBase}/media/upload`, { method: 'POST', body: form })
+      await $fetch(`${apiBase}/media/upload`, { method: 'POST', body: form, headers: xsrfHeaders() })
     }
     await fetchMedia(1)
   } finally {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\MediaResource\Pages;
 use App\Models\Media;
 use Filament\Forms;
@@ -14,13 +15,17 @@ use Illuminate\Support\Str;
 
 class MediaResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
     protected static ?string $model = Media::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-photo';
 
     protected static ?string $navigationLabel = 'Media Library';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 7;
 
     public static function table(Table $table): Table
     {
@@ -76,6 +81,7 @@ class MediaResource extends Resource
             ])
             ->headerActions([
                 Tables\Actions\Action::make('upload')
+                    ->authorize(fn () => static::canManage())
                     ->label('Upload Files')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->form([
@@ -112,6 +118,7 @@ class MediaResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkAction::make('delete')
+                    ->authorize(fn () => static::canManage())
                     ->requiresConfirmation()
                     ->icon('heroicon-o-trash')
                     ->color('danger')

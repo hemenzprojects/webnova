@@ -7,7 +7,7 @@ export const useApi = () => {
     if (!process.server) return {}
     const event = useRequestEvent()
     const host = event?.node?.req?.headers?.host
-    return host ? { Host: host } : {}
+    return host ? { Host: host, 'X-Forwarded-Host': host } : {}
   }
 
   const fetchPages = async () => {
@@ -58,30 +58,60 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/team-members/${slug}`, { headers: ssrHeaders() })
   }
 
-  const fetchSettings = async () => {
-    return await $fetch(`${apiBase}/settings`, { headers: ssrHeaders() })
+  const fetchSettings = async (params = {}) => {
+    return await $fetch(`${apiBase}/settings`, { params, headers: ssrHeaders() })
   }
 
   const fetchBranding = async () => {
     return await $fetch(`${apiBase}/branding`, { headers: ssrHeaders() })
   }
 
+  const fetchHeader = async () => {
+    return await $fetch(`${apiBase}/header`, { headers: ssrHeaders() })
+  }
+
+  const fetchFooter = async () => {
+    return await $fetch(`${apiBase}/footer`, { headers: ssrHeaders() })
+  }
+
+  // Plugins switched on for this site
+  const fetchPlugins = async (): Promise<{ active: string[] }> => {
+    return await $fetch(`${apiBase}/plugins`, { headers: ssrHeaders() })
+  }
+
+  // Membership plugin
+  const fetchMembershipForm = async () => {
+    return await $fetch(`${apiBase}/membership/form`, { headers: ssrHeaders() })
+  }
+
+  const submitMembership = async (answers: Record<string, any>) => {
+    return await $fetch(`${apiBase}/membership/register`, { method: 'POST', body: { answers }, headers: { Accept: 'application/json' } })
+  }
+
+  const fetchMembershipStatus = async (reference: string) => {
+    return await $fetch(`${apiBase}/membership/registrations/${encodeURIComponent(reference)}`, { headers: ssrHeaders() })
+  }
+
+  const retryMembershipPayment = async (reference: string) => {
+    return await $fetch(`${apiBase}/membership/registrations/${encodeURIComponent(reference)}/pay`, { method: 'POST', headers: { Accept: 'application/json' } })
+  }
+
   const fetchPageForEdit = async (id: number | string) => {
-    return await $fetch(`${apiBase}/pages/${id}/edit`, { headers: ssrHeaders() })
+    return await $fetch(`${apiBase}/pages/${id}/edit`, { headers: { ...ssrHeaders(), ...xsrfHeaders() } })
   }
 
   const updatePageBlocks = async (id: number | string, blocks: any[]) => {
     return await $fetch(`${apiBase}/pages/${id}/blocks`, {
       method: 'PUT',
       body: { blocks },
-      headers: ssrHeaders(),
+      headers: { ...ssrHeaders(), ...xsrfHeaders() },
     })
   }
 
   const publishPage = async (id: number | string) => {
     return await $fetch(`${apiBase}/pages/${id}/publish`, {
       method: 'POST',
-      headers: ssrHeaders(),
+      headers: { ...ssrHeaders(), ...xsrfHeaders() },
     })
   }
 
@@ -108,9 +138,16 @@ export const useApi = () => {
     fetchTeamMember,
     fetchSettings,
     fetchBranding,
+    fetchHeader,
+    fetchFooter,
     fetchPageForEdit,
     updatePageBlocks,
     publishPage,
     submitContactForm,
+    fetchPlugins,
+    fetchMembershipForm,
+    submitMembership,
+    fetchMembershipStatus,
+    retryMembershipPayment,
   }
 }

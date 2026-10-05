@@ -65,6 +65,10 @@ docker compose -f docker-compose.prod.yml exec -T backend php artisan view:cache
 echo "  - Publishing Filament assets..."
 docker compose -f docker-compose.prod.yml exec -T backend php artisan filament:assets || true
 
+# Rebuild Filament's list of admin resources and pages
+echo "  - Caching Filament components..."
+docker compose -f docker-compose.prod.yml exec -T backend php artisan filament:cache-components
+
 # Create storage link if not exists
 echo "  - Creating storage symlink..."
 docker compose -f docker-compose.prod.yml exec -T backend php artisan storage:link || true

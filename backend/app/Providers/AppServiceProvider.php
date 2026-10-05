@@ -15,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One instance per request: it caches which plugins are active
+        $this->app->scoped(\App\Plugins\PluginManager::class);
     }
 
     /**

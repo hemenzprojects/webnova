@@ -54,10 +54,17 @@ export const useElementorEditor = () => {
     { type: 'icon_cards', label: 'Icon Cards', icon: 'dashboard_customize', category: 'sections' },
     { type: 'who_we_are', label: 'Who We Are', icon: 'info', category: 'sections' },
     { type: 'timeline', label: 'Timeline', icon: 'timeline', category: 'sections' },
+    { type: 'about_split', label: 'About (photos + list)', icon: 'photo_library', category: 'sections' },
+    { type: 'feature_split', label: 'Features + Photo', icon: 'view_quilt', category: 'sections' },
+    { type: 'logo_strip', label: 'Logo Strip', icon: 'handshake', category: 'sections' },
+    { type: 'testimonials', label: 'Testimonials', icon: 'format_quote', category: 'sections' },
+    { type: 'cta_band', label: 'Call to Action', icon: 'campaign', category: 'sections' },
+    { type: 'faq', label: 'FAQ', icon: 'quiz', category: 'sections' },
 
     // Form Widgets
     { type: 'contact_form', label: 'Form', icon: 'contact_mail', category: 'forms' },
     { type: 'search_box', label: 'Search', icon: 'search', category: 'forms' },
+    { type: 'membership_form', label: 'Membership form', icon: 'how_to_reg', category: 'forms', plugin: 'membership' },
 
     // Dynamic Widgets
     { type: 'dynamic_news', label: 'Posts', icon: 'article', category: 'dynamic' },
@@ -451,6 +458,61 @@ export const useElementorEditor = () => {
         filter: 'upcoming',
         showLocation: true
       },
+      membership_form: {
+        heading: '',
+        text: ''
+      },
+      about_split: {
+        eyebrow: 'About us',
+        heading: 'Who we are',
+        text: 'Tell visitors what your institution stands for.',
+        images: [],
+        imagePosition: 'left',
+        checklist: ['First value', 'Second value', 'Third value'],
+        primaryButton: { text: 'Get started', url: '/contact' },
+        secondaryButton: { text: '', url: '' }
+      },
+      feature_split: {
+        eyebrow: 'Why choose us',
+        heading: 'What makes us different',
+        text: '',
+        image: '',
+        imagePosition: 'right',
+        background: 'tinted',
+        features: [
+          { icon: 'presentation', title: 'Expert staff', text: 'A short line about this.' },
+          { icon: 'book-open', title: 'Flexible learning', text: 'A short line about this.' }
+        ]
+      },
+      logo_strip: {
+        eyebrow: 'Our partners',
+        heading: '',
+        logos: []
+      },
+      testimonials: {
+        eyebrow: 'Testimonials',
+        heading: 'What people say',
+        text: '',
+        items: [
+          { photo: '', name: 'Name', role: 'Role', quote: 'A short quote.' }
+        ]
+      },
+      cta_band: {
+        heading: 'Ready to get started?',
+        text: '',
+        buttonText: 'Contact us',
+        buttonUrl: '/contact',
+        image: ''
+      },
+      faq: {
+        eyebrow: 'FAQ',
+        heading: 'Frequently asked questions',
+        text: '',
+        image: '',
+        items: [
+          { question: 'A common question?', answer: 'The answer.' }
+        ]
+      },
       dynamic_services: {
         heading: 'Our Services',
         items: [],
@@ -458,7 +520,8 @@ export const useElementorEditor = () => {
         layout: 'grid',
         columns: '3',
         showIcons: true,
-        showDescription: true
+        showDescription: true,
+        showReadMore: true
       },
       dynamic_members: {
         heading: 'Our Members',

@@ -161,7 +161,25 @@ Forms\Components\FileUpload::make('image')
     ->directory(self::tenantDir('pages/my-section'))
 ```
 
-Do not hardcode a plain string like `->directory('pages/my-section')` — files would be written to a shared path across all tenants.
+Do not hardcode a plain string like `->directory('pages/my-section')` — files would be written to a shared path across all tenants, and would not count towards the site's storage quota. Other resources call it as `PageResource::tenantDir(...)`.
+
+## Storage Quota
+
+Each site has a storage limit; uploads that would take it past the limit are refused with an error in the CMS.
+
+- **Limit:** `tenants.storage_limit_mb`, set per site in the central admin (Platform → Tenants). Empty = `TENANT_STORAGE_LIMIT_MB` (default 1024). The Tenants list shows each site's usage and how much of the server's storage the limits add up to (`STORAGE_CAPACITY_MB`, or the size of the storage volume if unset). Settings: `backend/config/quota.php`.
+- **Usage** is the site's files plus its database (`App\Services\StorageQuota`). Files are measured from `{tenant_id}/` on the `public` disk, not from the `media` table, so only tenant-scoped paths count. The database is `pg_database_size('customer_{id}')` (about 10 MB for an empty site); turn it off with `TENANT_STORAGE_INCLUDE_DATABASE=false`. Only uploads are blocked at the limit: saving text content is never refused.
+- **Enforcement:** every Filament `FileUpload` gets the check automatically (`FileUpload::configureUsing` in `AppServiceProvider`); `MediaController::upload` checks it for the page editor. Any new upload path that writes files itself must call `StorageQuota::errorForUpload($bytes)` first.
+- Site admins see their usage on the dashboard and above the Media Library (`App\Filament\Widgets\StorageUsage`). The central admin sees the total across all sites on its dashboard and above the Tenants list (`App\Filament\Widgets\PlatformStorage`); those figures are cached for 5 minutes.
+
+## Site Health
+
+Central admin → Platform → Site Health: per-site traffic, response times, server errors, slow queries and storage, with a Healthy / Needs attention / Critical status (thresholds in `backend/config/health.php`). All figures live in the **central** database (`site_stats`, `site_page_views`, `site_slow_queries`) and are written by `App\Services\SiteHealth`, which swallows its own errors so statistics can never break a site.
+
+- **Requests and response time:** `RecordSiteHealth` middleware (global, in `terminate()`, after the response is sent) adds each tenant request to that day's row.
+- **Page views:** `frontend/plugins/track.client.ts` posts the path to `POST /api/v1/track` on each navigation of the public site. Path only: no cookies, IPs or visitor details.
+- **Slow queries:** a `DB::listen` in `AppServiceProvider` logs queries on the `tenant` connection over `SITE_HEALTH_SLOW_QUERY_MS` (default 200), without bindings.
+- Daily figures are kept 90 days and slow queries 30; old rows are pruned from the middleware now and then, so no scheduler is needed. `SITE_HEALTH_ENABLED=false` turns collection off.
 
 ## API — SSR Host Forwarding
 
@@ -214,6 +232,7 @@ Optional feature modules that each site's admin activates under Customize → Pl
 - A plugin is a class extending `App\Plugins\Plugin`, registered in `config/plugins.php`, with its code in `app/Plugins/{Name}/`. Filament classes go in `app/Plugins/{Name}/Filament/{Resources,Pages,Widgets}` (auto-discovered), use the area traits (see Admin Areas) with `protected static ?string $plugin = '{key}'` so they hide while the plugin is off, and the plugin declares its top-bar tab in `Plugin::area()`. Plugin widgets set `$isDiscovered = false` to stay off the main dashboard.
 - API routes use the `plugin:{key}` middleware (404 while inactive). `GET /api/v1/plugins` lists active keys; the page editor hides blocks whose `plugin` is inactive.
 - Plugin tables are normal tenant migrations and are **not** cleared by theme installs; after a theme install, active plugins' `activated()` runs again to restore anything they add (e.g. the Membership page).
+- **Donations** (`app/Plugins/Donations`): the `donation_form` page block (currency, amount, title, name, email, phone, comments), Paystack payments (`Support/Donor`), a dashboard with per-currency totals, the list of all donations with CSV export, and manual recording of cash or bank gifts. Paystack returns donors to `/donation/complete`; the webhook is `POST /api/v1/donations/paystack/webhook`. It reuses Membership's `Support/Paystack` client, and falls back to Membership's Paystack keys when it has none of its own. A Paystack account has one webhook URL, so each plugin's webhook passes payments it does not recognise to the other.
 - **Membership** (`app/Plugins/Membership`): dashboard with filters, registrations, membership types (fee + period), a form builder (`Support/FormSchema` defines the JSON shape and builds validation rules), Paystack payments (`Support/Paystack`, `Support/Registrar`), and the `membership_form` page block. Each registration stores a snapshot of the form it was submitted with. Paystack returns payers to `/membership/complete`; the webhook is `POST /api/v1/membership/paystack/webhook`.
 
 ## Tenancy Bootstrapper Notes

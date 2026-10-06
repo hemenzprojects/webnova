@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(
             \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
         );
+        // Site Health statistics; outermost, so its terminate() sees every request
+        $middleware->prepend(\App\Http\Middleware\RecordSiteHealth::class);
         $middleware->alias([
             'plugin' => \App\Http\Middleware\EnsurePluginActive::class,
             'admin.can' => \App\Http\Middleware\EnsureAdminCan::class,

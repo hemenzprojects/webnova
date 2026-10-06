@@ -96,6 +96,23 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/membership/registrations/${encodeURIComponent(reference)}/pay`, { method: 'POST', headers: { Accept: 'application/json' } })
   }
 
+  // Donations plugin
+  const fetchDonationForm = async () => {
+    return await $fetch(`${apiBase}/donations/form`, { headers: ssrHeaders() })
+  }
+
+  const submitDonation = async (donation: Record<string, any>) => {
+    return await $fetch(`${apiBase}/donations`, { method: 'POST', body: donation, headers: { Accept: 'application/json' } })
+  }
+
+  const fetchDonationStatus = async (reference: string) => {
+    return await $fetch(`${apiBase}/donations/${encodeURIComponent(reference)}`, { headers: ssrHeaders() })
+  }
+
+  const retryDonationPayment = async (reference: string) => {
+    return await $fetch(`${apiBase}/donations/${encodeURIComponent(reference)}/pay`, { method: 'POST', headers: { Accept: 'application/json' } })
+  }
+
   const fetchPageForEdit = async (id: number | string) => {
     return await $fetch(`${apiBase}/pages/${id}/edit`, { headers: { ...ssrHeaders(), ...xsrfHeaders() } })
   }
@@ -149,5 +166,9 @@ export const useApi = () => {
     submitMembership,
     fetchMembershipStatus,
     retryMembershipPayment,
+    fetchDonationForm,
+    submitDonation,
+    fetchDonationStatus,
+    retryDonationPayment,
   }
 }

@@ -61,7 +61,7 @@ class MemberResource extends Resource
                         Forms\Components\FileUpload::make('logo')
                             ->image()
                             ->disk('public')
-                            ->directory('members/logos')
+                            ->directory(PageResource::tenantDir('members/logos'))
                             ->visibility('public')
                             ->imageEditor()
                             ->imageEditorAspectRatios([

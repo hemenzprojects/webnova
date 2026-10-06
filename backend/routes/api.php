@@ -16,8 +16,10 @@ use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\FooterController;
 use App\Http\Controllers\Api\HeaderController;
 use App\Http\Controllers\Api\ThemeController;
+use App\Plugins\Donations\Http\DonationController;
 use App\Plugins\Membership\Http\MembershipController;
 use App\Plugins\PluginManager;
+use App\Services\SiteHealth;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -83,6 +85,14 @@ Route::prefix('v1')->group(function () {
     // Footer
     Route::get('/footer', [FooterController::class, 'index']);
 
+    // Page-view beacon from the public site (Platform → Site Health)
+    Route::post('/track', function (Request $request, SiteHealth $health) {
+        $data = $request->validate(['path' => 'required|string|max:500']);
+        $health->recordPageView(tenancy()->tenant?->id, $data['path']);
+
+        return response()->noContent();
+    })->middleware('throttle:120,1');
+
     // Contact Form
     Route::post('/contact-form', [ContactFormController::class, 'store']);
 
@@ -96,5 +106,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
         Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
         Route::post('/paystack/webhook', [MembershipController::class, 'paystackWebhook']);
+    });
+
+    // Donations plugin
+    Route::prefix('donations')->middleware('plugin:donations')->group(function () {
+        Route::get('/form', [DonationController::class, 'form']);
+        Route::post('/', [DonationController::class, 'donate'])->middleware('throttle:10,1');
+        Route::post('/paystack/webhook', [DonationController::class, 'paystackWebhook']);
+        Route::get('/{reference}', [DonationController::class, 'status']);
+        Route::post('/{reference}/pay', [DonationController::class, 'retryPayment'])->middleware('throttle:10,1');
     });
 });

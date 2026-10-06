@@ -7,6 +7,7 @@ use App\Plugins\Membership\Models\MembershipRegistration;
 use App\Plugins\Membership\Models\MembershipType;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
@@ -18,7 +19,7 @@ class Registrar
     /**
      * Validate and store a submission, then start payment if one is due.
      *
-     * @return array{registration: MembershipRegistration, payment_url: ?string}
+     * @return array{registration: MembershipRegistration, payment_url: ?string, payment_failed: bool}
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -56,10 +57,20 @@ class Registrar
 
         $this->notifyAdmin($registration);
 
-        return [
-            'registration' => $registration,
-            'payment_url' => $amount > 0 ? $this->startPayment($registration, $siteUrl) : null,
-        ];
+        $paymentUrl = null;
+        $paymentFailed = false;
+        if ($amount > 0) {
+            try {
+                $paymentUrl = $this->startPayment($registration, $siteUrl);
+            } catch (Throwable $e) {
+                // Paystack refused or could not be reached. The registration is
+                // kept as unpaid, so the applicant need not fill the form in again.
+                report($e);
+                $paymentFailed = true;
+            }
+        }
+
+        return ['registration' => $registration, 'payment_url' => $paymentUrl, 'payment_failed' => $paymentFailed];
     }
 
     /**
@@ -89,15 +100,20 @@ class Registrar
     }
 
     /**
-     * Ask Paystack about the latest payment attempt and record the result.
+     * Ask Paystack about a payment attempt and record the result. Checks the
+     * latest attempt unless told which one: an earlier attempt can still
+     * succeed after the applicant has started another.
      */
-    public function confirmPayment(MembershipRegistration $registration): MembershipRegistration
+    public function confirmPayment(MembershipRegistration $registration, ?string $paymentReference = null): MembershipRegistration
     {
-        if ($registration->payment_status === 'paid' || ! $registration->payment_reference) {
+        $paymentReference ??= $registration->payment_reference;
+
+        // Attempts are "{registration reference}-{n}"; anything else is a receipt number an admin typed
+        if ($registration->payment_status === 'paid' || ! $paymentReference || ! str_starts_with($paymentReference, $registration->reference . '-')) {
             return $registration;
         }
 
-        $result = MembershipSettings::paystack()->verify($registration->payment_reference);
+        $result = MembershipSettings::paystack()->verify($paymentReference);
         if (! $result) {
             return $registration;
         }
@@ -107,13 +123,31 @@ class Registrar
             && $result['amount'] + 0.001 >= (float) $registration->amount;
 
         if ($paidInFull) {
-            $registration->update(['payment_status' => 'paid', 'paid_at' => now()]);
+            $registration->update(['payment_status' => 'paid', 'paid_at' => now(), 'payment_reference' => $paymentReference]);
             $this->autoApprove($registration);
-        } elseif (in_array($result['status'], ['failed', 'abandoned', 'reversed'], true)) {
+        } elseif ($paymentReference === $registration->payment_reference && in_array($result['status'], ['failed', 'abandoned', 'reversed'], true)) {
             $registration->update(['payment_status' => 'failed']);
         }
 
         return $registration->refresh();
+    }
+
+    /**
+     * For Paystack webhooks: confirm the registration a payment belongs to,
+     * whichever attempt it was. False if the payment is not for a registration.
+     */
+    public function confirmByPaymentReference(string $paymentReference): bool
+    {
+        $registration = MembershipRegistration::where('payment_reference', $paymentReference)
+            ->orWhere('reference', Str::beforeLast($paymentReference, '-'))
+            ->first();
+        if (! $registration) {
+            return false;
+        }
+
+        $this->confirmPayment($registration, $paymentReference);
+
+        return true;
     }
 
     /**

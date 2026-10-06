@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Media;
+use App\Services\StorageQuota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class MediaController extends Controller
 {
@@ -43,6 +45,11 @@ class MediaController extends Controller
         ]);
 
         $image    = $request->file('image');
+
+        if ($error = app(StorageQuota::class)->errorForUpload($image->getSize())) {
+            throw ValidationException::withMessages(['image' => $error]);
+        }
+
         $type     = $request->input('type', 'general');
         $folder   = $request->input('folder');
         $filename = Str::ulid() . '.' . $image->getClientOriginalExtension();

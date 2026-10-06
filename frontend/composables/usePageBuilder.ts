@@ -44,10 +44,11 @@ export const usePageBuilder = () => {
     cta_band: 'PageBuilderCtaBand',
     faq: 'PageBuilderFaq',
     membership_form: 'PageBuilderMembershipForm',
+    donation_form: 'PageBuilderDonationForm',
   }
 
   // Blocks with no hand-written branch in PageRenderer / Widget
-  const NAMED_BLOCKS = ['about_split', 'logo_strip', 'feature_split', 'testimonials', 'cta_band', 'faq', 'membership_form']
+  const NAMED_BLOCKS = ['about_split', 'logo_strip', 'feature_split', 'testimonials', 'cta_band', 'faq', 'membership_form', 'donation_form']
 
   /**
    * Get the Vue component name for a block type

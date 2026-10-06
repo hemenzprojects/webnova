@@ -48,6 +48,10 @@ export const BLOCK_SCHEMAS: Record<string, BlockField[]> = {
     { key: 'heading', label: 'Heading (optional)', type: 'text', help: 'The fields themselves are set in the admin under Membership → Registration form' },
     { key: 'text', label: 'Intro text (optional)', type: 'textarea' },
   ],
+  donation_form: [
+    { key: 'heading', label: 'Heading (optional)', type: 'text', help: 'Currencies, titles and the smallest amount are set in the admin under Donations → Settings' },
+    { key: 'text', label: 'Intro text (optional)', type: 'textarea' },
+  ],
   about_split: [
     ...intro,
     { key: 'images', label: 'Photos (two)', type: 'list', plain: true, itemLabel: 'Photo', fields: [{ key: 'value', label: 'Photo', type: 'image' }] },

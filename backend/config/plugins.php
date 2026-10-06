@@ -8,5 +8,6 @@
 return [
     'plugins' => [
         App\Plugins\Membership\MembershipPlugin::class,
+        App\Plugins\Donations\DonationsPlugin::class,
     ],
 ];

@@ -3,11 +3,13 @@
 namespace App\Plugins\Membership\Http;
 
 use App\Http\Controllers\Controller;
+use App\Plugins\Donations\Support\Donor;
 use App\Plugins\Membership\Models\MembershipForm;
 use App\Plugins\Membership\Models\MembershipRegistration;
 use App\Plugins\Membership\Models\MembershipType;
 use App\Plugins\Membership\Support\MembershipSettings;
 use App\Plugins\Membership\Support\Registrar;
+use App\Plugins\PluginManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -57,7 +59,9 @@ class MembershipController extends Controller
             'reference' => $registration->reference,
             'payment_url' => $result['payment_url'],
             'payment_status' => $registration->payment_status,
-            'message' => MembershipSettings::get('success_message'),
+            'message' => $result['payment_failed']
+                ? 'Your registration has been received, but online payment could not be started. We will contact you about how to pay. Please keep your reference.'
+                : MembershipSettings::get('success_message'),
         ], 201);
     }
 
@@ -92,6 +96,13 @@ class MembershipController extends Controller
     public function retryPayment(Request $request, string $reference): JsonResponse
     {
         $registration = MembershipRegistration::where('reference', $reference)->firstOrFail();
+
+        // The last attempt may have gone through since the applicant last looked
+        try {
+            $registration = $this->registrar->confirmPayment($registration);
+        } catch (Throwable $e) {
+            report($e);
+        }
         abort_if($registration->payment_status === 'paid' || $registration->payment_status === 'not_required', 409, 'Nothing to pay.');
 
         return response()->json(['payment_url' => $this->registrar->startPayment($registration, $this->siteUrl($request))]);
@@ -107,9 +118,9 @@ class MembershipController extends Controller
 
         if ($request->input('event') === 'charge.success') {
             $paymentReference = (string) $request->input('data.reference');
-            $registration = MembershipRegistration::where('payment_reference', $paymentReference)->first();
-            if ($registration) {
-                $this->registrar->confirmPayment($registration);
+            // A Paystack account has a single webhook URL, shared with the Donations plugin
+            if (! $this->registrar->confirmByPaymentReference($paymentReference) && app(PluginManager::class)->isActive('donations')) {
+                app(Donor::class)->confirmByPaymentReference($paymentReference);
             }
         }
 

@@ -65,6 +65,7 @@ export const useElementorEditor = () => {
     { type: 'contact_form', label: 'Form', icon: 'contact_mail', category: 'forms' },
     { type: 'search_box', label: 'Search', icon: 'search', category: 'forms' },
     { type: 'membership_form', label: 'Membership form', icon: 'how_to_reg', category: 'forms', plugin: 'membership' },
+    { type: 'donation_form', label: 'Donation form', icon: 'volunteer_activism', category: 'forms', plugin: 'donations' },
 
     // Dynamic Widgets
     { type: 'dynamic_news', label: 'Posts', icon: 'article', category: 'dynamic' },
@@ -461,6 +462,10 @@ export const useElementorEditor = () => {
       membership_form: {
         heading: '',
         text: ''
+      },
+      donation_form: {
+        heading: 'Make a Donation',
+        text: 'Provide your personal details in the fields provided. All fields marked ( * ) are required.'
       },
       about_split: {
         eyebrow: 'About us',

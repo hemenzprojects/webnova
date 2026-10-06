@@ -63,7 +63,7 @@ class BrandingResource extends Resource
                             ->label('Main Logo')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->imageEditor()
                             ->maxSize(2048)
                             ->helperText('Primary logo for light backgrounds (PNG with transparency recommended)'),
@@ -71,7 +71,7 @@ class BrandingResource extends Resource
                             ->label('Light Logo (Optional)')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->imageEditor()
                             ->maxSize(2048)
                             ->helperText('Alternative logo for dark backgrounds'),
@@ -79,7 +79,7 @@ class BrandingResource extends Resource
                             ->label('Favicon')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml'])
                             ->maxSize(512)
                             ->helperText('Small icon that appears in browser tabs (16x16 or 32x32 px)'),

@@ -46,7 +46,9 @@ class ServiceResource extends Resource
                     ->label('Price label')
                     ->helperText('Shown on course-style cards, e.g. "Free" or "Premium"'),
                 Forms\Components\FileUpload::make('featured_image')
-                    ->image(),
+                    ->image()
+                    ->disk('public')
+                    ->directory(PageResource::tenantDir('services/featured')),
                 Forms\Components\Toggle::make('is_active')
                     ->required(),
                 Forms\Components\Toggle::make('is_featured')

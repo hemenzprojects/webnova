@@ -275,6 +275,10 @@ const handleUpload = async (event: Event) => {
       await $fetch(`${apiBase}/media/upload`, { method: 'POST', body: form, headers: xsrfHeaders() })
     }
     await fetchMedia(1)
+  } catch (err: any) {
+    // e.g. the site's storage limit has been reached
+    window.alert(err.data?.message || 'Failed to upload file. Please try again.')
+    await fetchMedia(1)
   } finally {
     uploading.value = false
     if (fileInput.value) fileInput.value.value = ''

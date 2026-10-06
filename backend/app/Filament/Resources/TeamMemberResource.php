@@ -48,7 +48,7 @@ class TeamMemberResource extends Resource
                 Forms\Components\FileUpload::make('photo')
                     ->image()
                     ->disk('public')
-                    ->directory('team/photos')
+                    ->directory(PageResource::tenantDir('team/photos'))
                     ->imageEditor()
                     ->maxSize(5120)
                     ->columnSpanFull(),

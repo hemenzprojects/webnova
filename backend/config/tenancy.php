@@ -116,8 +116,13 @@ return [
          * For the vast majority of applications, this feature should be enabled. But in some
          * edge cases, it can cause issues (like using Passport with Vapor - see #196), so
          * you may want to disable this if you are experiencing these edge case issues.
+         *
+         * Disabled here: local and public disks are tenant-scoped by a manual
+         * {tenant_id}/ path prefix instead. With the suffix on, storage_path()
+         * points at storage/tenant{id}/, which has no framework/cache directory,
+         * so Livewire file uploads fail with a 500 on tenant domains.
          */
-        'suffix_storage_path' => true,
+        'suffix_storage_path' => false,
 
         /**
          * By default, asset() calls are made multi-tenant too. You can use global_asset() and mix()

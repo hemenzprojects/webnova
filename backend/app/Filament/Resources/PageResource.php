@@ -28,7 +28,7 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    private static function tenantDir(string $dir): \Closure
+    public static function tenantDir(string $dir): \Closure
     {
         return fn() => (tenancy()->tenant?->id ? tenancy()->tenant->id . '/' : '') . $dir;
     }

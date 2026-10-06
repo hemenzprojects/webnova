@@ -310,6 +310,8 @@ class MembershipRegistrationResource extends Resource
         return response()->streamDownload(function () use ($records, $fields) {
             $out = fopen('php://output', 'w');
             fputcsv($out, array_merge(['Reference', 'Submitted', 'Membership type', 'Amount', 'Currency', 'Payment', 'Status'], $fields->pluck('label')->all()));
+            // Applicant-typed text must not run as a formula when the file is opened in a spreadsheet
+            $safe = fn ($value) => is_string($value) && preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value;
             foreach ($records as $r) {
                 $row = [
                     $r->reference, $r->created_at?->format('Y-m-d H:i'), $r->membershipType?->name, $r->amount, $r->currency,
@@ -320,7 +322,7 @@ class MembershipRegistrationResource extends Resource
                     $value = $r->answers[$field['key']] ?? '';
                     $row[] = is_array($value) ? implode(', ', $value) : (is_bool($value) ? ($value ? 'Yes' : 'No') : $value);
                 }
-                fputcsv($out, $row);
+                fputcsv($out, array_map($safe, $row));
             }
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv']);

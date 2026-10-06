@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\TenantResource\Pages;
 use App\Models\Tenant;
+use App\Services\StorageQuota;
 use App\Services\ThemeService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -51,6 +52,14 @@ class TenantResource extends Resource
                         ->unique(table: 'domains', column: 'domain')
                         ->visibleOn('create')
                         ->dehydrated(false),
+                    Forms\Components\TextInput::make('storage_limit_mb')
+                        ->label('Storage limit')
+                        ->suffix('MB')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->placeholder((string) config('quota.default_limit_mb'))
+                        ->helperText(fn () => 'Uploads are refused once the site reaches this. Leave empty for the default. '.static::allocationSummary()),
                 ]),
 
             Forms\Components\Section::make('First administrator')
@@ -84,10 +93,53 @@ class TenantResource extends Resource
                 Tables\Columns\TextColumn::make('theme_slug')
                     ->label('Theme')
                     ->formatStateUsing(fn (?string $state) => app(ThemeService::class)->get($state ?? 'default')['name'] ?? $state),
+                Tables\Columns\TextColumn::make('storage')
+                    ->label('Storage')
+                    ->state(function (Tenant $record): string {
+                        $quota = app(StorageQuota::class);
+
+                        return StorageQuota::format($quota->cachedUsedBytes($record)).' of '.StorageQuota::format($quota->limitBytes($record));
+                    })
+                    ->description(function (Tenant $record): string {
+                        $usage = app(StorageQuota::class)->cachedUsage($record);
+
+                        return 'Files '.StorageQuota::format($usage['files']).' · Database '.StorageQuota::format($usage['database']);
+                    })
+                    ->badge()
+                    ->color(function (Tenant $record): string {
+                        $quota = app(StorageQuota::class);
+                        $percent = $quota->percentUsed($record, $quota->cachedUsedBytes($record));
+
+                        return match (true) {
+                            $percent >= 100 => 'danger',
+                            $percent >= config('quota.warn_at') => 'warning',
+                            default => 'success',
+                        };
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);
+    }
+
+    /**
+     * How much of the server's storage the sites' limits add up to.
+     */
+    public static function allocationSummary(): string
+    {
+        $quota = app(StorageQuota::class);
+        $allocated = $quota->allocatedBytes();
+        $capacity = $quota->capacityBytes();
+
+        if (! $capacity) {
+            return StorageQuota::format($allocated).' allocated across all sites.';
+        }
+
+        $summary = StorageQuota::format($allocated).' of '.StorageQuota::format($capacity).' server storage allocated across all sites.';
+
+        return $allocated > $capacity
+            ? $summary.' That is '.StorageQuota::format($allocated - $capacity).' more than the server has.'
+            : $summary;
     }
 
     public static function getPages(): array

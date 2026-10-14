@@ -43,11 +43,10 @@ export default defineNuxtConfig({
   app: {
     buildAssetsDir: '/_nuxt/',
     head: {
-      title: 'WEBNOVA - Ghanaian Academic and Research Network',
+      // Title and description come from each site's Branding (app.vue)
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Ghanaian Academic and Research Network - Connecting Ghana\'s education sector' }
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }

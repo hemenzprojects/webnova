@@ -50,10 +50,11 @@ const { data: page, pending } = await useAsyncData(
 )
 
 useSeoMeta({
-  title: page.value?.meta_title || page.value?.title || '',
-  description: page.value?.meta_description || page.value?.excerpt || '',
-  ogTitle: page.value?.meta_title || page.value?.title || '',
-  ogDescription: page.value?.meta_description || page.value?.excerpt || '',
+  // Left out when empty, so the site's own (Branding, in app.vue) is used
+  title: page.value?.meta_title || page.value?.title || undefined,
+  description: page.value?.meta_description || page.value?.excerpt || undefined,
+  ogTitle: page.value?.meta_title || page.value?.title || undefined,
+  ogDescription: page.value?.meta_description || page.value?.excerpt || undefined,
   ogImage: page.value?.featured_image ? getImageUrl(page.value.featured_image) : undefined,
   twitterCard: 'summary_large_image',
 })

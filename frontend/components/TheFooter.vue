@@ -130,7 +130,7 @@ const defaultColumns = computed<FooterColumn[]>(() => {
     {
       widgets: [
         { type: 'heading', text: siteName.value },
-        { type: 'text', html: escapeHtml(props.branding?.site_tagline || 'Ghanaian Academic and Research Network - Connecting Education') },
+        ...(props.branding?.site_tagline ? [{ type: 'text' as const, html: escapeHtml(props.branding.site_tagline) }] : []),
       ],
     },
     {

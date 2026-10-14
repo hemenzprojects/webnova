@@ -196,7 +196,7 @@ class BrandingResource extends Resource
                             ->rows(3)
                             ->maxLength(160)
                             ->placeholder('A brief description for search engines (recommended: 150-160 characters)')
-                            ->helperText('This appears in search engine results')
+                            ->helperText('Shown in search results and in link previews (WhatsApp, Facebook, …) for pages without their own description. Falls back to the Site Description above.')
                             ->columnSpanFull(),
                         Forms\Components\TagsInput::make('meta_keywords')
                             ->placeholder('Add keywords')

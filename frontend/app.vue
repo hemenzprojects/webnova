@@ -23,6 +23,18 @@ const route = useRoute()
 // Fetch branding settings
 const { data: branding } = await useAsyncData('branding', () => fetchBranding())
 
+// Site-wide title and description from Branding; pages with their own replace them
+const siteDescription = computed(() =>
+  branding.value?.meta_description || branding.value?.site_description || branding.value?.site_tagline || undefined
+)
+useSeoMeta({
+  title: () => branding.value?.site_name || undefined,
+  description: siteDescription,
+  ogSiteName: () => branding.value?.site_name || undefined,
+  ogTitle: () => branding.value?.site_name || undefined,
+  ogDescription: siteDescription,
+})
+
 // Coming Soon plugin: hides the site from visitors, not from signed-in admins
 const { data: comingSoon } = await useAsyncData('coming-soon', () =>
   fetchComingSoon(route.query['coming-soon-preview'] === '1').catch(() => null)

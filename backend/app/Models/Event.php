@@ -19,6 +19,7 @@ class Event extends Model
         'registration_link',
         'is_published',
         'is_featured',
+        'show_sidebar',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class Event extends Model
         'end_date' => 'datetime',
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
+        'show_sidebar' => 'boolean',
         'attachments' => 'array',
     ];
 }

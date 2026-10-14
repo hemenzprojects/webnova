@@ -1,32 +1,36 @@
-/**
- * Composable for handling image URLs from the backend
- */
 export const useImageUrl = () => {
   const config = useRuntimeConfig()
 
-  /**
-   * Convert a storage path to a full URL
-   * @param path - The storage path (e.g., "news/featured/image.png")
-   * @param fallback - Optional fallback image URL
-   * @returns Full URL to the image
-   */
-  const getImageUrl = (path: string | null | undefined, fallback?: string): string => {
-    // Return fallback if no path provided
-    if (!path) {
-      return fallback || ''
+  // Capture backend URL at composable init time so it's available in SSR context
+  let backendUrl: string
+  if (process.server) {
+    try {
+      const event = useRequestEvent()
+      const host = event?.node?.req?.headers?.host
+      const proto = (event?.node?.req?.headers?.['x-forwarded-proto'] as string) || 'http'
+      backendUrl = host ? `${proto}://${host}` : (config.public.backendUrl || '')
+    } catch {
+      backendUrl = config.public.backendUrl || ''
     }
+  } else {
+    backendUrl = typeof window !== 'undefined' ? window.location.origin : (config.public.backendUrl || '')
+  }
 
-    // If already a full URL, return as-is
+  const getImageUrl = (path: string | null | undefined, fallback?: string): string => {
+    if (!path) return fallback || ''
+
+    // Rewrite old localhost URLs with the current host
     if (path.startsWith('http://') || path.startsWith('https://')) {
+      try {
+        const parsed = new URL(path)
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+          return `${backendUrl}${parsed.pathname}`
+        }
+      } catch {}
       return path
     }
 
-    // Remove leading slash if present
     const cleanPath = path.startsWith('/') ? path.substring(1) : path
-
-    // Use the public backend URL for browser-accessible images
-    // Falls back to deriving from API base if not set
-    const backendUrl = config.public.backendUrl || config.public.apiBase.replace('/api/v1', '')
     return `${backendUrl}/storage/${cleanPath}`
   }
 

@@ -44,9 +44,9 @@ if (error.value || !page.value) {
 // SEO Meta Tags
 useSeoMeta({
   title: page.value.meta_title || page.value.title,
-  description: page.value.meta_description || page.value.excerpt,
+  description: page.value.meta_description || page.value.excerpt || undefined,
   ogTitle: page.value.meta_title || page.value.title,
-  ogDescription: page.value.meta_description || page.value.excerpt,
+  ogDescription: page.value.meta_description || page.value.excerpt || undefined,
   ogImage: page.value.featured_image ? getImageUrl(page.value.featured_image) : undefined,
   twitterCard: 'summary_large_image',
 })

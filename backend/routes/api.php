@@ -13,6 +13,14 @@ use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\ContactFormController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\FooterController;
+use App\Http\Controllers\Api\HeaderController;
+use App\Http\Controllers\Api\ThemeController;
+use App\Plugins\ComingSoon\Http\ComingSoonController;
+use App\Plugins\Donations\Http\DonationController;
+use App\Plugins\Membership\Http\MembershipController;
+use App\Plugins\PluginManager;
+use App\Services\SiteHealth;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -20,15 +28,22 @@ Route::get('/user', function (Request $request) {
 
 // Public API routes
 Route::prefix('v1')->group(function () {
-    // Media Upload
-    Route::post('/media/upload', [MediaController::class, 'upload']);
-    Route::post('/media/delete', [MediaController::class, 'delete']);
+    // Media library: admins only (signed in to /admin; uses the admin session)
+    Route::middleware(['web', 'admin.can:media,view'])->get('/media', [MediaController::class, 'index']);
+    Route::middleware(['web', 'admin.can:media,manage'])->group(function () {
+        Route::post('/media/upload', [MediaController::class, 'upload']);
+        Route::delete('/media/{id}', [MediaController::class, 'destroy']);
+        Route::post('/media/delete', [MediaController::class, 'delete']); // legacy
+    });
 
     // Pages
     Route::get('/pages', [PageController::class, 'index']);
-    Route::get('/pages/{id}/edit', [PageController::class, 'edit']);
-    Route::put('/pages/{id}/blocks', [PageController::class, 'updateBlocks']);
-    Route::post('/pages/{id}/publish', [PageController::class, 'publish']);
+    // Page editor: admins only
+    Route::middleware(['web', 'admin.can:pages,view'])->get('/pages/{id}/edit', [PageController::class, 'edit']);
+    Route::middleware(['web', 'admin.can:pages,manage'])->group(function () {
+        Route::put('/pages/{id}/blocks', [PageController::class, 'updateBlocks']);
+        Route::post('/pages/{id}/publish', [PageController::class, 'publish']);
+    });
     Route::get('/pages/{slug}', [PageController::class, 'show']);
 
     // News
@@ -58,10 +73,52 @@ Route::prefix('v1')->group(function () {
     // Branding
     Route::get('/branding', [BrandingController::class, 'index']);
 
+    // Theme
+    Route::get('/theme', [ThemeController::class, 'index']);
+
     // Menus
     Route::get('/menus', [MenuController::class, 'index']);
     Route::get('/menus/{location}', [MenuController::class, 'show']);
 
+    // Header
+    Route::get('/header', [HeaderController::class, 'index']);
+
+    // Footer
+    Route::get('/footer', [FooterController::class, 'index']);
+
+    // Page-view beacon from the public site (Platform → Site Health)
+    Route::post('/track', function (Request $request, SiteHealth $health) {
+        $data = $request->validate(['path' => 'required|string|max:500']);
+        $health->recordPageView(tenancy()->tenant?->id, $data['path']);
+
+        return response()->noContent();
+    })->middleware('throttle:120,1');
+
     // Contact Form
     Route::post('/contact-form', [ContactFormController::class, 'store']);
+
+    // Plugins switched on for this site (the frontend hides blocks of inactive ones)
+    Route::get('/plugins', fn (PluginManager $plugins) => response()->json(['active' => $plugins->activeKeys()]));
+
+    // Coming Soon plugin: whether to hide the public site. Uses the admin
+    // session, so signed-in admins still see the real site.
+    Route::middleware('web')->get('/coming-soon', [ComingSoonController::class, 'show']);
+
+    // Membership plugin
+    Route::prefix('membership')->middleware('plugin:membership')->group(function () {
+        Route::get('/form', [MembershipController::class, 'form']);
+        Route::post('/register', [MembershipController::class, 'register'])->middleware('throttle:10,1');
+        Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
+        Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
+        Route::post('/paystack/webhook', [MembershipController::class, 'paystackWebhook']);
+    });
+
+    // Donations plugin
+    Route::prefix('donations')->middleware('plugin:donations')->group(function () {
+        Route::get('/form', [DonationController::class, 'form']);
+        Route::post('/', [DonationController::class, 'donate'])->middleware('throttle:10,1');
+        Route::post('/paystack/webhook', [DonationController::class, 'paystackWebhook']);
+        Route::get('/{reference}', [DonationController::class, 'status']);
+        Route::post('/{reference}/pay', [DonationController::class, 'retryPayment'])->middleware('throttle:10,1');
+    });
 });

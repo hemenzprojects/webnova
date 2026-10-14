@@ -1,0 +1,4 @@
+# Caches generated on the host must not be baked into the image: a stale
+# Filament component cache hides resources and pages added after it was made
+bootstrap/cache/*.php
+bootstrap/cache/filament

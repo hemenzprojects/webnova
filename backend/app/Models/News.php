@@ -16,6 +16,7 @@ class News extends Model
         'category',
         'is_published',
         'is_featured',
+        'show_sidebar',
         'published_at',
         'order',
     ];
@@ -23,6 +24,7 @@ class News extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
+        'show_sidebar' => 'boolean',
         'published_at' => 'datetime',
         'attachments' => 'array',
     ];

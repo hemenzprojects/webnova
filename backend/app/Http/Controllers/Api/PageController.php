@@ -172,7 +172,7 @@ class PageController extends Controller
         return Service::where('is_active', true)
             ->orderBy('order')
             ->limit($limit)
-            ->select('id', 'name', 'slug', 'description', 'icon', 'featured_image')
+            ->select('id', 'name', 'slug', 'description', 'icon', 'category', 'price_label', 'featured_image')
             ->get()
             ->toArray();
     }

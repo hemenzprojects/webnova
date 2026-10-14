@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\BrandingResource\Pages;
 use App\Filament\Resources\BrandingResource\RelationManagers;
 use App\Models\Branding;
@@ -12,14 +13,21 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Support\SocialPlatforms;
 
 class BrandingResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'appearance';
+
     protected static ?string $model = Branding::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
 
     protected static ?string $navigationLabel = 'Branding & Settings';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Branding';
 
@@ -55,7 +63,7 @@ class BrandingResource extends Resource
                             ->label('Main Logo')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->imageEditor()
                             ->maxSize(2048)
                             ->helperText('Primary logo for light backgrounds (PNG with transparency recommended)'),
@@ -63,7 +71,7 @@ class BrandingResource extends Resource
                             ->label('Light Logo (Optional)')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->imageEditor()
                             ->maxSize(2048)
                             ->helperText('Alternative logo for dark backgrounds'),
@@ -71,7 +79,7 @@ class BrandingResource extends Resource
                             ->label('Favicon')
                             ->image()
                             ->disk('public')
-                            ->directory('branding')
+                            ->directory(PageResource::tenantDir('branding'))
                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml'])
                             ->maxSize(512)
                             ->helperText('Small icon that appears in browser tabs (16x16 or 32x32 px)'),
@@ -154,40 +162,30 @@ class BrandingResource extends Resource
 
                 // Social Media Section
                 Forms\Components\Section::make('Social Media Links')
-                    ->description('Your social media profiles')
+                    ->description('Your social media profiles. Used wherever social icons are shown, such as the header and the footer.')
                     ->schema([
-                        Forms\Components\TextInput::make('facebook_url')
-                            ->label('Facebook')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://facebook.com/yourpage')
-                            ->prefix('facebook.com/'),
-                        Forms\Components\TextInput::make('twitter_url')
-                            ->label('Twitter/X')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://twitter.com/yourhandle')
-                            ->prefix('twitter.com/'),
-                        Forms\Components\TextInput::make('linkedin_url')
-                            ->label('LinkedIn')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://linkedin.com/company/yourcompany')
-                            ->prefix('linkedin.com/'),
-                        Forms\Components\TextInput::make('instagram_url')
-                            ->label('Instagram')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://instagram.com/yourhandle')
-                            ->prefix('instagram.com/'),
-                        Forms\Components\TextInput::make('youtube_url')
-                            ->label('YouTube')
-                            ->url()
-                            ->maxLength(255)
-                            ->placeholder('https://youtube.com/c/yourchannel')
-                            ->prefix('youtube.com/'),
+                        Forms\Components\Repeater::make('social_links')
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\Select::make('platform')
+                                    ->label('Icon')
+                                    ->options(SocialPlatforms::selectOptions())
+                                    ->allowHtml()
+                                    ->required()
+                                    ->native(false),
+                                Forms\Components\TextInput::make('url')
+                                    ->label('Link')
+                                    ->required()
+                                    ->url()
+                                    ->maxLength(255)
+                                    ->placeholder('https://'),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->maxItems(12)
+                            ->reorderable()
+                            ->addActionLabel('Add social media icon'),
                     ])
-                    ->columns(2)
                     ->collapsible(),
 
                 // SEO Section
@@ -198,7 +196,7 @@ class BrandingResource extends Resource
                             ->rows(3)
                             ->maxLength(160)
                             ->placeholder('A brief description for search engines (recommended: 150-160 characters)')
-                            ->helperText('This appears in search engine results')
+                            ->helperText('Shown in search results and in link previews (WhatsApp, Facebook, …) for pages without their own description. Falls back to the Site Description above.')
                             ->columnSpanFull(),
                         Forms\Components\TagsInput::make('meta_keywords')
                             ->placeholder('Add keywords')

@@ -35,8 +35,9 @@
     </div>
 
     <!-- Article Content -->
-    <article v-else class="container mx-auto px-4 py-12">
-      <div class="max-w-4xl mx-auto">
+    <div v-else class="container mx-auto px-4 py-12">
+      <div :class="showSidebar ? 'max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12' : 'max-w-4xl mx-auto'">
+      <article :class="{ 'lg:col-span-2': showSidebar }">
         <!-- Article Header -->
         <div class="mb-8">
           <!-- Category Badge -->
@@ -168,15 +169,26 @@
             Back to All News
           </NuxtLink>
         </div>
+      </article>
+
+      <DetailSidebar
+        v-if="showSidebar"
+        :class="{ 'lg:order-first': sidebar.position === 'left' }"
+        :title="sidebar.title"
+        :items="otherNews"
+        :show-image="sidebar.showImage"
+        :show-date="sidebar.showDate"
+      />
       </div>
-    </article>
+    </div>
   </div>
 </template>
 
 <script setup>
 const route = useRoute()
-const { fetchNewsItem } = useApi()
+const { fetchNewsItem, fetchNews } = useApi()
 const { getImageUrl, getFileName } = useImageUrl()
+const { getSidebarConfig } = useSidebarSettings()
 
 // Get the current URL for sharing
 const currentUrl = computed(() => {
@@ -191,6 +203,24 @@ const { data: article, pending, error } = await useAsyncData(
   `news-${route.params.slug}`,
   () => fetchNewsItem(route.params.slug)
 )
+
+// Other articles for the sidebar. Global options come from the admin's Sidebar
+// Settings; each article can also turn its own sidebar off.
+const { data: sidebar } = await useAsyncData('sidebar-config-news', () => getSidebarConfig('news'))
+
+const { data: newsData } = await useAsyncData('news-sidebar', () =>
+  sidebar.value.enabled
+    ? fetchNews({ per_page: sidebar.value.limit + 1, sort: sidebar.value.order })
+    : { data: [] }
+)
+
+const otherNews = computed(() =>
+  (newsData.value?.data || [])
+    .filter((item) => item.id !== article.value?.id)
+    .slice(0, sidebar.value.limit)
+    .map((item) => ({ id: item.id, label: item.title, to: `/news/${item.slug}`, date: item.published_at, image: item.featured_image }))
+)
+const showSidebar = computed(() => sidebar.value.enabled && !!article.value?.show_sidebar && otherNews.value.length > 0)
 
 // Set SEO meta tags
 useSeoMeta({

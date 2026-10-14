@@ -29,12 +29,14 @@ class Branding extends Model
         'linkedin_url',
         'instagram_url',
         'youtube_url',
+        'social_links',
         'meta_description',
         'meta_keywords',
     ];
 
     protected $casts = [
         'meta_keywords' => 'array',
+        'social_links' => 'array',
     ];
 
     /**
@@ -45,9 +47,8 @@ class Branding extends Model
         return static::firstOrCreate(
             ['id' => 1],
             [
-                'site_name' => 'WEBNOVA',
-                'site_tagline' => 'Ghanaian Academic and Research Network',
-                'site_description' => 'Connecting Ghana\'s education sector through high-speed internet and innovation',
+                // A new site starts with its own name; the tagline and description are its to fill in
+                'site_name' => tenancy()->tenant?->name ?: 'WEBNOVA',
                 'primary_color' => '#0A1E3E',
                 'primary_light' => '#1A3A5C',
                 'primary_dark' => '#050F1F',

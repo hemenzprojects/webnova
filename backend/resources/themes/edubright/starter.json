@@ -1,0 +1,522 @@
+{
+  "branding": {
+    "site_name": "Edubright",
+    "site_tagline": "Empowering minds for a better tomorrow",
+    "site_description": "Practical, career-focused courses taught by experienced instructors, online and on campus.",
+    "logo": "theme:logo.svg",
+    "logo_light": "theme:logo-light.svg",
+    "primary_color": "#6C3CE0",
+    "primary_light": "#9B74EE",
+    "primary_dark": "#4F27B3",
+    "accent_color": "#6C3CE0",
+    "accent_light": "#9B74EE",
+    "accent_dark": "#4F27B3",
+    "text_color": "#1E1B4B",
+    "background_color": "#FFFFFF",
+    "contact_email": "hello@edubright.example",
+    "contact_phone": "+233 30 000 0000",
+    "contact_address": "12 Learning Avenue\nAccra, Ghana",
+    "social_links": [
+      { "platform": "facebook", "url": "https://facebook.com/" },
+      { "platform": "x", "url": "https://x.com/" },
+      { "platform": "youtube", "url": "https://youtube.com/" }
+    ]
+  },
+
+  "pages": [
+    {
+      "title": "Home",
+      "slug": "home",
+      "meta_description": "Practical, career-focused courses taught by experienced instructors.",
+      "blocks": [
+        {
+          "type": "hero",
+          "data": {
+            "heading": "Empowering Minds for a Better Tomorrow",
+            "subheading": "Learn the skills employers are looking for with hands-on courses, supportive instructors and a community that helps you finish what you start.",
+            "foregroundImage": "theme:hero-student.jpg",
+            "ctaText": "Enquire Now",
+            "ctaLink": "/contact",
+            "stat": { "value": "75+", "label": "Professional teachers" },
+            "stats": [
+              { "value": "15+", "label": "Years of experience" },
+              { "value": "250+", "label": "Students" },
+              { "value": "450+", "label": "University partners" }
+            ]
+          }
+        },
+        {
+          "type": "about_split",
+          "data": {
+            "eyebrow": "About us",
+            "heading": "Empowering Lifelong Learning",
+            "text": "We believe good teaching changes lives. Our courses combine clear lessons, real projects and personal support, so every learner leaves with skills they can use straight away.",
+            "images": ["theme:about-1.jpg", "theme:about-2.jpg"],
+            "imagePosition": "left",
+            "checklist": [
+              "Excellence in Education",
+              "Accessibility for All",
+              "Integrity & Trust",
+              "Student-Centered Approach",
+              "Collaboration & Community"
+            ],
+            "primaryButton": { "text": "Get Started", "url": "/courses" },
+            "secondaryButton": { "text": "Contact Us", "url": "/contact" }
+          }
+        },
+        {
+          "type": "logo_strip",
+          "data": {
+            "eyebrow": "Our partners in education",
+            "logos": [
+              { "image": "theme:partner-1.svg", "alt": "Brightway" },
+              { "image": "theme:partner-2.svg", "alt": "openlearn" },
+              { "image": "theme:partner-3.svg", "alt": "scholaris" },
+              { "image": "theme:partner-4.svg", "alt": "Unitree" }
+            ]
+          }
+        },
+        {
+          "type": "dynamic_services",
+          "data": {
+            "eyebrow": "Start learning today",
+            "heading": "Browse our curated courses",
+            "subheading": "Pick a course that fits your goals and your schedule. Every course includes practical projects and a certificate on completion.",
+            "items": [],
+            "limit": 4,
+            "layout": "grid",
+            "columns": "4",
+            "showIcons": true,
+            "showDescription": true,
+            "showReadMore": true,
+            "readMoreText": "View Details"
+          }
+        },
+        {
+          "type": "feature_split",
+          "data": {
+            "eyebrow": "Why choose us",
+            "heading": "Education That Empowers You",
+            "text": "From your first lesson to your final project, we make learning practical, flexible and personal.",
+            "image": "theme:why-choose-us.jpg",
+            "imagePosition": "right",
+            "background": "tinted",
+            "features": [
+              { "icon": "presentation", "title": "Expert Instructors", "text": "Learn from practitioners who teach what they do every day." },
+              { "icon": "book-open", "title": "Flexible Learning", "text": "Study online, on campus or both, at a pace that suits you." },
+              { "icon": "chat", "title": "Community & Support", "text": "Mentors and fellow learners are there when you get stuck." },
+              { "icon": "list", "title": "Affordable Options", "text": "Free starter courses and fair payment plans for the rest." }
+            ]
+          }
+        },
+        {
+          "type": "testimonials",
+          "data": {
+            "eyebrow": "Testimonials",
+            "heading": "What Our Learners Say",
+            "text": "Thousands of learners have used our courses to change careers, earn promotions and start their own businesses.",
+            "items": [
+              { "photo": "theme:avatar-1.jpg", "name": "Abena K.", "role": "Web Development Student", "quote": "As a working professional I needed a flexible schedule. The instructors were supportive and the content was focused on real jobs." },
+              { "photo": "theme:avatar-2.jpg", "name": "Kwame T.", "role": "Financial Literacy Learner", "quote": "I have tried many platforms, but this one stands out. The lessons are practical and the support team is always quick to help." },
+              { "photo": "theme:avatar-3.jpg", "name": "Lina R.", "role": "Digital Marketing Graduate", "quote": "The course gave me the confidence and the portfolio I needed. I landed my first marketing role two months after finishing." }
+            ]
+          }
+        },
+        {
+          "type": "cta_band",
+          "data": {
+            "heading": "Start Learning Today",
+            "text": "Join a free introductory class and see how we teach before you commit to a full course.",
+            "buttonText": "Join For Free",
+            "buttonUrl": "/contact",
+            "image": "theme:cta.jpg"
+          }
+        },
+        {
+          "type": "faq",
+          "data": {
+            "eyebrow": "FAQ",
+            "heading": "Answers to the most common questions",
+            "image": "theme:faq.jpg",
+            "items": [
+              { "question": "What types of courses do you offer?", "answer": "We offer short courses and certificate programmes in technology, business, design and personal development, from beginner to advanced level." },
+              { "question": "Can I learn at my own pace?", "answer": "Yes. Most courses are self-paced with optional live sessions, so you can fit your studies around work and family." },
+              { "question": "Will I receive a certificate?", "answer": "Every course ends with a certificate of completion that you can share with employers and on your professional profiles." },
+              { "question": "How do I enrol in a course?", "answer": "Choose a course, select Enquire or Join, and our admissions team will guide you through registration and payment options." },
+              { "question": "Can I access courses on my phone?", "answer": "Yes. All course materials work on phones, tablets and computers, and many lessons can be downloaded to watch offline." }
+            ]
+          }
+        },
+        {
+          "type": "dynamic_news",
+          "data": {
+            "eyebrow": "From our blog",
+            "heading": "Tips, insights, and stories to inspire your learning journey",
+            "subheading": "Study tips, learner stories and news from our community.",
+            "items": [],
+            "limit": 3,
+            "layout": "grid",
+            "columns": "3",
+            "showImage": true,
+            "showExcerpt": true,
+            "showDate": true,
+            "showReadMore": true,
+            "readMoreText": "See more"
+          }
+        }
+      ]
+    },
+    {
+      "title": "About Us",
+      "slug": "about",
+      "meta_description": "Who we are and how we teach.",
+      "blocks": [
+        {
+          "type": "about_split",
+          "data": {
+            "eyebrow": "About us",
+            "heading": "Learning that fits real life",
+            "text": "We started with a simple idea: practical education should be available to everyone. Today we teach learners across the country, online and in our classrooms.",
+            "images": ["theme:about-2.jpg", "theme:about-1.jpg"],
+            "imagePosition": "left",
+            "checklist": ["Experienced, caring instructors", "Courses built with employers", "Support from enrolment to graduation"],
+            "primaryButton": { "text": "Browse Courses", "url": "/courses" },
+            "secondaryButton": { "text": "Contact Us", "url": "/contact" }
+          }
+        },
+        {
+          "type": "feature_split",
+          "data": {
+            "eyebrow": "Our values",
+            "heading": "What we stand for",
+            "text": "These principles guide every course we design and every learner we support.",
+            "image": "theme:why-choose-us.jpg",
+            "imagePosition": "right",
+            "background": "tinted",
+            "features": [
+              { "icon": "trophy", "title": "Excellence", "text": "High standards in teaching and in the work we ask of learners." },
+              { "icon": "users", "title": "Inclusion", "text": "Courses designed to be open to every background." },
+              { "icon": "shield", "title": "Integrity", "text": "Honest advice about which course is right for you." },
+              { "icon": "light-bulb", "title": "Curiosity", "text": "We keep learning too, and update courses every term." }
+            ]
+          }
+        },
+        {
+          "type": "testimonials",
+          "data": {
+            "eyebrow": "Testimonials",
+            "heading": "Hear from our learners",
+            "items": [
+              { "photo": "theme:avatar-1.jpg", "name": "Abena K.", "role": "Web Development Student", "quote": "Supportive instructors and content focused on real jobs." },
+              { "photo": "theme:avatar-2.jpg", "name": "Kwame T.", "role": "Financial Literacy Learner", "quote": "Practical lessons and a support team that answers quickly." },
+              { "photo": "theme:avatar-3.jpg", "name": "Lina R.", "role": "Digital Marketing Graduate", "quote": "I landed my first marketing role two months after finishing." }
+            ]
+          }
+        },
+        {
+          "type": "cta_band",
+          "data": {
+            "heading": "Ready to begin?",
+            "text": "Talk to our admissions team about the right course for you.",
+            "buttonText": "Contact Us",
+            "buttonUrl": "/contact",
+            "image": "theme:cta.jpg"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Courses",
+      "slug": "courses",
+      "meta_description": "All courses.",
+      "blocks": [
+        {
+          "type": "dynamic_services",
+          "data": {
+            "eyebrow": "Our courses",
+            "heading": "Find the right course for you",
+            "subheading": "Every course includes practical projects, mentor support and a certificate.",
+            "items": [],
+            "limit": "all",
+            "layout": "grid",
+            "columns": "4",
+            "showIcons": true,
+            "showDescription": true,
+            "showReadMore": true,
+            "readMoreText": "View Details"
+          }
+        },
+        {
+          "type": "faq",
+          "data": {
+            "eyebrow": "FAQ",
+            "heading": "Questions about our courses",
+            "items": [
+              { "question": "Can I learn at my own pace?", "answer": "Yes. Most courses are self-paced with optional live sessions." },
+              { "question": "Will I receive a certificate?", "answer": "Every course ends with a certificate of completion." },
+              { "question": "Do you offer payment plans?", "answer": "Yes. Premium courses can be paid in monthly instalments." }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Blog",
+      "slug": "blog",
+      "meta_description": "News and stories.",
+      "blocks": [
+        {
+          "type": "dynamic_news",
+          "data": {
+            "eyebrow": "Blog",
+            "heading": "News and stories",
+            "subheading": "Study tips, learner stories and updates from our community.",
+            "items": [],
+            "limit": 12,
+            "layout": "grid",
+            "columns": "3",
+            "showImage": true,
+            "showExcerpt": true,
+            "showDate": true,
+            "showReadMore": true,
+            "readMoreText": "See more"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Events",
+      "slug": "events",
+      "meta_description": "Upcoming events.",
+      "blocks": [
+        {
+          "type": "dynamic_events",
+          "data": {
+            "heading": "Upcoming events",
+            "subheading": "Open days, workshops and information sessions.",
+            "items": [],
+            "limit": 6,
+            "filter": "upcoming",
+            "layout": "grid",
+            "columns": "3"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Contact Us",
+      "slug": "contact",
+      "meta_description": "Get in touch with our admissions team.",
+      "blocks": [
+        {
+          "type": "contact_form",
+          "data": {
+            "heading": "Get in touch",
+            "description": "Questions about a course, fees or enrolment? Send us a message and our admissions team will reply within one working day.",
+            "submitText": "Send Message",
+            "emailTo": "hello@edubright.example",
+            "showPhone": true,
+            "showCompany": false
+          }
+        },
+        {
+          "type": "faq",
+          "data": {
+            "eyebrow": "FAQ",
+            "heading": "Before you write",
+            "items": [
+              { "question": "How do I enrol in a course?", "answer": "Choose a course and select Enquire, or send us a message here." },
+              { "question": "When do courses start?", "answer": "Self-paced courses start any time; cohort courses start every month." }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+
+  "menus": [
+    {
+      "name": "Main menu",
+      "location": "header",
+      "items": [
+        { "label": "Home", "url": "/" },
+        { "label": "About Us", "page": "about" },
+        { "label": "Courses", "page": "courses" },
+        { "label": "Pages", "type": "category", "children": [
+          { "label": "Blog", "page": "blog" },
+          { "label": "Events", "page": "events" }
+        ] },
+        { "label": "Contact Us", "page": "contact" }
+      ]
+    },
+    {
+      "name": "Footer: Pages",
+      "location": "footer-pages",
+      "items": [
+        { "label": "Home", "url": "/" },
+        { "label": "About Us", "page": "about" },
+        { "label": "Courses", "page": "courses" },
+        { "label": "Contact", "page": "contact" }
+      ]
+    },
+    {
+      "name": "Footer: Support",
+      "location": "footer-support",
+      "items": [
+        { "label": "Blog", "page": "blog" },
+        { "label": "Events", "page": "events" },
+        { "label": "FAQ", "page": "courses" },
+        { "label": "Contact", "page": "contact" }
+      ]
+    }
+  ],
+
+  "services": [
+    {
+      "name": "Digital Marketing Fundamentals",
+      "slug": "digital-marketing-fundamentals",
+      "description": "Plan campaigns, grow an audience on social media and measure what works.",
+      "content": "<p>Learn how to plan a digital campaign from start to finish. You will practise writing for social media, running small ad budgets and reading analytics, then present a complete campaign for a real local business.</p><ul><li>6 weeks, self-paced</li><li>Weekly live Q&amp;A</li><li>Certificate of completion</li></ul>",
+      "category": "Business",
+      "price_label": "Free",
+      "featured_image": "theme:course-marketing.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "show_sidebar": true
+    },
+    {
+      "name": "Introduction to Web Development",
+      "slug": "introduction-to-web-development",
+      "description": "Build and publish your first websites with HTML, CSS and JavaScript.",
+      "content": "<p>Start from zero and finish with a portfolio of three published websites. The course covers HTML structure, modern CSS layout and the JavaScript you need to make pages interactive.</p><ul><li>10 weeks</li><li>Mentor code reviews</li><li>Certificate of completion</li></ul>",
+      "category": "Web",
+      "price_label": "Premium",
+      "featured_image": "theme:course-web.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "show_sidebar": true
+    },
+    {
+      "name": "Graphic Design Basics",
+      "slug": "graphic-design-basics",
+      "description": "Learn layout, colour and typography, and design for print and screen.",
+      "content": "<p>Understand the principles behind good design and apply them to posters, social posts and simple brand identities. No previous experience needed.</p><ul><li>8 weeks</li><li>Project feedback from designers</li><li>Certificate of completion</li></ul>",
+      "category": "Design",
+      "price_label": "Free",
+      "featured_image": "theme:course-design.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "show_sidebar": true
+    },
+    {
+      "name": "Python Programming for Beginners",
+      "slug": "python-programming-for-beginners",
+      "description": "Write your first programs and automate everyday tasks with Python.",
+      "content": "<p>A friendly introduction to programming. You will write small programs, work with files and data, and finish by automating a task from your own work or studies.</p><ul><li>8 weeks</li><li>Hands-on exercises every lesson</li><li>Certificate of completion</li></ul>",
+      "category": "Web",
+      "price_label": "Premium",
+      "featured_image": "theme:course-python.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "show_sidebar": true
+    }
+  ],
+
+  "news": [
+    {
+      "title": "The Power of Lifelong Learning: Why It's Never Too Late to Start",
+      "slug": "the-power-of-lifelong-learning",
+      "excerpt": "Learning new skills at any age keeps your career moving and your mind sharp.",
+      "content": "<p>Many of our learners come back to study after years at work. They tell us the same thing: starting was the hardest part. Here is why it is worth it, and how to make the first step easier.</p>",
+      "category": "Learning",
+      "featured_image": "theme:blog-1.jpg",
+      "is_published": true,
+      "is_featured": true,
+      "published_at": "-4 days"
+    },
+    {
+      "title": "Balancing Work and Study: Tips for Busy Learners",
+      "slug": "balancing-work-and-study",
+      "excerpt": "Practical routines that help working professionals finish their courses.",
+      "content": "<p>Short, regular study sessions beat long weekend marathons. We asked graduates how they fitted learning around full-time jobs and families.</p>",
+      "category": "Tips",
+      "featured_image": "theme:blog-2.jpg",
+      "is_published": true,
+      "published_at": "-12 days"
+    },
+    {
+      "title": "5 Study Habits to Help You Learn Faster",
+      "slug": "study-habits-to-learn-faster",
+      "excerpt": "Simple, research-backed techniques that make new knowledge stick.",
+      "content": "<p>Spaced repetition, teaching others and practising with real problems are three of the most effective ways to learn. Here is how to use them in any course.</p>",
+      "category": "Tips",
+      "featured_image": "theme:blog-3.jpg",
+      "is_published": true,
+      "published_at": "-20 days"
+    }
+  ],
+
+  "events": [
+    {
+      "title": "Open Day: Meet Our Instructors",
+      "slug": "open-day-meet-our-instructors",
+      "description": "<p>Tour our campus, sit in on a sample class and ask our instructors anything about the courses.</p>",
+      "venue": "Main Campus",
+      "location": "Accra",
+      "featured_image": "theme:why-choose-us.jpg",
+      "start_date": "+10 days 10:00",
+      "end_date": "+10 days 14:00",
+      "is_published": true,
+      "is_featured": true,
+      "show_sidebar": true
+    },
+    {
+      "title": "Free Workshop: Build Your First Web Page",
+      "slug": "free-workshop-build-your-first-web-page",
+      "description": "<p>A two-hour, hands-on introduction to HTML and CSS. Bring a laptop; no experience needed.</p>",
+      "venue": "Computer Lab 2",
+      "location": "Accra",
+      "featured_image": "theme:course-web.jpg",
+      "start_date": "+24 days 15:00",
+      "end_date": "+24 days 17:00",
+      "is_published": true,
+      "show_sidebar": true
+    }
+  ],
+
+  "settings": [
+    { "key": "header_layout", "value": "classic", "type": "text", "group": "header" },
+    { "key": "header_sticky", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_show_site_name", "value": false, "type": "boolean", "group": "header" },
+    { "key": "header_show_phone", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_show_email", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_show_social", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_cta_enabled", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_cta_text", "value": "Enquire", "type": "text", "group": "header" },
+    { "key": "header_cta_url", "value": "/contact", "type": "text", "group": "header" },
+    { "key": "header_cta_new_tab", "value": false, "type": "boolean", "group": "header" },
+    { "key": "header_cta2_enabled", "value": true, "type": "boolean", "group": "header" },
+    { "key": "header_cta2_text", "value": "Courses", "type": "text", "group": "header" },
+    { "key": "header_cta2_url", "value": "/courses", "type": "text", "group": "header" },
+    { "key": "header_cta2_new_tab", "value": false, "type": "boolean", "group": "header" },
+
+    { "key": "sidebar_services_title", "value": "Other Courses", "type": "text", "group": "sidebar" },
+    { "key": "sidebar_news_title", "value": "More from the blog", "type": "text", "group": "sidebar" },
+
+    {
+      "key": "footer_columns",
+      "type": "json",
+      "group": "footer",
+      "value": [
+        { "widgets": [
+          { "type": "logo", "data": {} },
+          { "type": "contact", "data": { "heading": "Head Office" } }
+        ] },
+        { "widgets": [{ "type": "menu", "data": { "menu": "footer-pages", "heading": "Pages" } }] },
+        { "widgets": [{ "type": "menu", "data": { "menu": "footer-support", "heading": "Support" } }] },
+        { "widgets": [{ "type": "social", "data": { "heading": "Follow us" } }] }
+      ]
+    },
+    { "key": "footer_copyright", "value": "© {year} Edubright. All rights reserved.", "type": "text", "group": "footer" }
+  ]
+}

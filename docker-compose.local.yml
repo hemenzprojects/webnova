@@ -1,0 +1,82 @@
+# Local testing — identical stack to Fly.io (PostgreSQL + Redis)
+# Usage:
+#   1. cp backend/.env.docker.example backend/.env.docker
+#   2. Fill in APP_KEY (see comment in that file)
+#   3. docker compose -f docker-compose.local.yml up --build
+#   4. docker compose -f docker-compose.local.yml exec app php artisan migrate
+#
+# Multi-domain testing — add to /etc/hosts:
+#   127.0.0.1  platform.local
+#   127.0.0.1  cda.local
+#   127.0.0.1  csl.local
+#
+# Then access:
+#   Central admin → http://platform.local:8080/admin
+#   Tenant        → http://cda.local:8080
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deploy/fly/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - backend/.env.docker
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./backend:/var/www/html
+      - app-vendor:/var/www/html/vendor
+      - ./deploy/local/php-local.ini:/usr/local/etc/php/conf.d/zz-local.ini
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - webnova-local
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"   # exposed so you can connect via TablePlus on your Mac
+    environment:
+      POSTGRES_DB: webnova_central
+      POSTGRES_USER: webnova
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres-local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webnova -d webnova_central"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - webnova-local
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-local:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - webnova-local
+
+networks:
+  webnova-local:
+    driver: bridge
+
+volumes:
+  postgres-local:
+  redis-local:
+  app-vendor:

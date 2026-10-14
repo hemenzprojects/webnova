@@ -12,7 +12,7 @@
         <div class="absolute inset-0 z-0 w-full h-full">
           <div v-if="slide.backgroundImage" class="absolute inset-0">
             <img
-              :src="slide.backgroundImage"
+              :src="getImageUrl(slide.backgroundImage) || ''"
               alt="Background"
               class="w-full h-full object-cover"
             />
@@ -80,7 +80,7 @@
                 <!-- Background Image (if provided) -->
                 <div v-if="slide.featuredImage && slide.featuredImageMode === 'background'" class="absolute inset-0">
                   <img
-                    :src="slide.featuredImage"
+                    :src="getImageUrl(slide.featuredImage) || ''"
                     :alt="slide.featuredTitle || 'Featured'"
                     class="w-full h-full object-cover"
                   />
@@ -96,7 +96,7 @@
                   <!-- Left: Image -->
                   <div class="relative">
                     <img
-                      :src="slide.featuredImage"
+                      :src="getImageUrl(slide.featuredImage) || ''"
                       :alt="slide.featuredTitle || 'Featured'"
                       class="w-full h-full object-cover"
                     />
@@ -130,7 +130,7 @@
                   <!-- Top: Image -->
                   <div class="flex-1 relative">
                     <img
-                      :src="slide.featuredImage"
+                      :src="getImageUrl(slide.featuredImage) || ''"
                       :alt="slide.featuredTitle || 'Featured'"
                       class="w-full h-full object-cover"
                     />
@@ -235,6 +235,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+const { getImageUrl } = useImageUrl()
 
 interface Slide {
   backgroundImage?: string

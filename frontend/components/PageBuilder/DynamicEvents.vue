@@ -105,7 +105,9 @@ const formatDate = (date: string) => {
   })
 }
 
-const truncate = (text: string, length: number) => {
+const truncate = (html: string, length: number) => {
+  // Descriptions come from a rich-text editor; show them as plain text here
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   if (text.length <= length) return text
   return text.substring(0, length) + '...'
 }

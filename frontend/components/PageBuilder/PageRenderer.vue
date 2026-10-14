@@ -2,6 +2,7 @@
   <div class="page-builder-content">
     <template v-for="(section, sectionIndex) in groupedSections" :key="section.id || `section-${sectionIndex}`">
       <!-- Section Wrapper with Background -->
+      <PageBuilderBlockWrapper :styles="section.settings?._style">
       <div :style="getSectionStyle(section.settings)" class="elementor-section">
         <!-- If section has columns, render in column layout -->
         <div
@@ -22,9 +23,18 @@
             class="space-y-4"
           >
             <template v-for="(block, blockIndex) in column.blocks" :key="block.id || `block-${blockIndex}`">
+              <PageBuilderBlockWrapper :styles="block.data?._style">
+              <!-- Theme override or section block rendered by name -->
+              <component
+                v-if="getNamedComponent(block.type)"
+                :is="getNamedComponent(block.type)"
+                :data="block.data"
+                :block-id="block.id || `block-${blockIndex}`"
+              />
+
               <!-- Heading Widget - Inline version for columns -->
               <component
-                v-if="block.type === 'heading'"
+                v-else-if="block.type === 'heading'"
                 :is="block.data.tag || 'h2'"
                 :class="[
                   getHeadingClass(block.data.tag || 'h2'),
@@ -44,7 +54,7 @@
               <!-- Image Widget - Inline version for columns -->
               <img
                 v-else-if="block.type === 'image'"
-                :src="block.data.url"
+                :src="transformImageUrl(block.data.url) || ''"
                 :alt="block.data.alt"
                 :class="['max-w-full h-auto', getAlignmentClass(block.data.alignment)]"
                 :style="{ width: block.data.width ? `${block.data.width.size}${block.data.width.unit}` : '100%' }"
@@ -116,6 +126,7 @@
 
               <!-- Unknown Block -->
               <PageBuilderUnknown v-else :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
+              </PageBuilderBlockWrapper>
             </template>
           </div>
         </div>
@@ -123,8 +134,16 @@
         <!-- If no columns, render blocks sequentially (backwards compatibility) -->
         <template v-else>
           <template v-for="(block, blockIndex) in section.blocks" :key="block.id || `block-${blockIndex}`">
+            <PageBuilderBlockWrapper :styles="block.data?._style">
+            <!-- Theme override or section block rendered by name -->
+            <component
+              v-if="getNamedComponent(block.type)"
+              :is="getNamedComponent(block.type)"
+              :data="block.data"
+              :block-id="block.id || `block-${blockIndex}`"
+            />
             <!-- Basic Blocks -->
-            <PageBuilderTextBlock v-if="block.type === 'text_block'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
+            <PageBuilderTextBlock v-else-if="block.type === 'text_block'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderHeading v-else-if="block.type === 'heading'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderImage v-else-if="block.type === 'image'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
             <PageBuilderButton v-else-if="block.type === 'button'" :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
@@ -160,9 +179,11 @@
 
             <!-- Unknown Block -->
             <PageBuilderUnknown v-else :data="block.data" :block-id="block.id || `block-${blockIndex}`" />
+            </PageBuilderBlockWrapper>
           </template>
         </template>
       </div>
+      </PageBuilderBlockWrapper>
     </template>
   </div>
 </template>
@@ -172,7 +193,7 @@ const props = defineProps<{
   blocks: any[]
 }>()
 
-const { sortBlocks } = usePageBuilder()
+const { sortBlocks, transformImageUrl, getNamedComponent } = usePageBuilder()
 
 const groupedSections = computed(() => {
   const blocks = sortBlocks(props.blocks || [])

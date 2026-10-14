@@ -207,6 +207,14 @@ const previewModes = [
   { label: 'Mobile', value: 'mobile', icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' }
 ]
 
+// Explain sign-in and permission problems instead of a bare "failed"
+const describeError = (error: any, action: string) => {
+  if (error?.status === 401) return `Please sign in to the admin first, then reopen the editor to ${action}.`
+  if (error?.status === 403) return `Your role does not allow you to ${action}.`
+  if (error?.status === 419) return 'Your admin session has expired. Sign in to the admin again, then reopen the editor.'
+  return `Failed to ${action}.`
+}
+
 // Load page
 onMounted(async () => {
   try {
@@ -218,7 +226,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error loading page:', error)
-    alert('Failed to load page')
+    alert(describeError(error, 'open this page'))
   }
 })
 
@@ -302,7 +310,7 @@ const handleSave = async () => {
     alert('Page saved successfully!')
   } catch (error) {
     console.error('Error saving page:', error)
-    alert('Failed to save page')
+    alert(describeError(error, 'save this page'))
   } finally {
     isSaving.value = false
   }
@@ -319,7 +327,7 @@ const handlePublish = async () => {
     alert('Page published successfully!')
   } catch (error) {
     console.error('Error publishing page:', error)
-    alert('Failed to publish page')
+    alert(describeError(error, 'publish this page'))
   }
 }
 

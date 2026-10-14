@@ -205,8 +205,19 @@ const toggleCategory = (category: string) => {
   expandedCategories.value[category] = !expandedCategories.value[category]
 }
 
+// Blocks that belong to a plugin are only offered while it is active
+const { fetchPlugins } = useApi()
+const activePlugins = ref<string[]>([])
+onMounted(async () => {
+  try {
+    activePlugins.value = (await fetchPlugins()).active
+  } catch {
+    activePlugins.value = []
+  }
+})
+
 const getFilteredWidgets = (category: string) => {
-  let widgets = widgetLibrary.filter(w => w.category === category)
+  let widgets = widgetLibrary.filter((w: any) => w.category === category && (!w.plugin || activePlugins.value.includes(w.plugin)))
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()

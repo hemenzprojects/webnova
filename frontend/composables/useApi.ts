@@ -79,6 +79,17 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/plugins`, { headers: ssrHeaders() })
   }
 
+  // Coming Soon plugin: whether to hide the site from this visitor. Sends the
+  // visitor's cookies (forwarded during SSR) so signed-in admins see the real site.
+  const fetchComingSoon = async (preview = false): Promise<Record<string, any>> => {
+    const cookie = process.server ? useRequestHeaders(['cookie']) : {}
+    return await $fetch(`${apiBase}/coming-soon`, {
+      params: preview ? { preview: 1 } : {},
+      headers: { ...ssrHeaders(), ...cookie, Accept: 'application/json' },
+      credentials: 'include',
+    })
+  }
+
   // Membership plugin
   const fetchMembershipForm = async () => {
     return await $fetch(`${apiBase}/membership/form`, { headers: ssrHeaders() })
@@ -162,6 +173,7 @@ export const useApi = () => {
     publishPage,
     submitContactForm,
     fetchPlugins,
+    fetchComingSoon,
     fetchMembershipForm,
     submitMembership,
     fetchMembershipStatus,

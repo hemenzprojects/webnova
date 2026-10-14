@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\FooterController;
 use App\Http\Controllers\Api\HeaderController;
 use App\Http\Controllers\Api\ThemeController;
+use App\Plugins\ComingSoon\Http\ComingSoonController;
 use App\Plugins\Donations\Http\DonationController;
 use App\Plugins\Membership\Http\MembershipController;
 use App\Plugins\PluginManager;
@@ -98,6 +99,10 @@ Route::prefix('v1')->group(function () {
 
     // Plugins switched on for this site (the frontend hides blocks of inactive ones)
     Route::get('/plugins', fn (PluginManager $plugins) => response()->json(['active' => $plugins->activeKeys()]));
+
+    // Coming Soon plugin: whether to hide the public site. Uses the admin
+    // session, so signed-in admins still see the real site.
+    Route::middleware('web')->get('/coming-soon', [ComingSoonController::class, 'show']);
 
     // Membership plugin
     Route::prefix('membership')->middleware('plugin:membership')->group(function () {

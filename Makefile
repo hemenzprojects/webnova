@@ -3,6 +3,7 @@
 COMPOSE    = docker compose -f docker-compose.local.yml
 FLY_CONFIG = deploy/fly/fly.toml
 FLY_DB_APP = cms-postgres
+FLY_DB_PORT ?= 15432
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -66,7 +67,7 @@ help:
 	@echo "  make fly-tenants-migrate              - Run tenant DB migrations"
 	@echo "  make fly-seed                         - Seed production DB"
 	@echo "  make fly-db                           - Connect to production Postgres (psql)"
-	@echo "  make fly-db-proxy                     - Tunnel Postgres to localhost:5432 (TablePlus)"
+	@echo "  make fly-db-proxy                     - Tunnel Postgres to localhost:15432 (TablePlus)"
 	@echo "  make fly-certs-add DOMAIN=x.edu.gh    - Add custom domain + SSL"
 	@echo "  make fly-certs-show DOMAIN=x.edu.gh   - Check SSL cert status"
 	@echo ""
@@ -218,8 +219,8 @@ fly-db:
 	fly postgres connect -a $(FLY_DB_APP)
 
 fly-db-proxy:
-	@echo "Proxying Fly Postgres to localhost:5432 — connect TablePlus to 127.0.0.1:5432"
-	fly proxy 5432 -a $(FLY_DB_APP)
+	@echo "Proxying Fly Postgres to localhost:$(FLY_DB_PORT) — connect TablePlus to 127.0.0.1:$(FLY_DB_PORT)"
+	fly proxy $(FLY_DB_PORT):5432 -a $(FLY_DB_APP)
 
 fly-certs-add:
 	@[ -n "$(DOMAIN)" ] || (echo "Usage: make fly-certs-add DOMAIN=school.edu.gh"; exit 1)

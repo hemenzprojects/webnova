@@ -20,7 +20,12 @@
                     <p style="font-size:.875rem;opacity:.75;margin-bottom:1rem">{{ $plugin['description'] }}</p>
 
                     @if ($plugin['active'])
-                        {{ ($this->deactivateAction)(['plugin' => $plugin['key']]) }}
+                        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                            @if ($plugin['settings_url'])
+                                <x-filament::button tag="a" :href="$plugin['settings_url']" icon="heroicon-o-cog-6-tooth">Settings</x-filament::button>
+                            @endif
+                            {{ ($this->deactivateAction)(['plugin' => $plugin['key']]) }}
+                        </div>
                     @else
                         {{ ($this->activateAction)(['plugin' => $plugin['key']]) }}
                     @endif

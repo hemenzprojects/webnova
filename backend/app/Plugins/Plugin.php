@@ -45,6 +45,12 @@ abstract class Plugin
         return null;
     }
 
+    /** Address of the plugin's settings screen, shown as a button on its Plugins card while active */
+    public function settingsUrl(): ?string
+    {
+        return null;
+    }
+
     /** Page-builder block types this plugin adds, hidden in the editor while inactive */
     public function blocks(): array
     {

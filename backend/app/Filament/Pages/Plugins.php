@@ -35,6 +35,7 @@ class Plugins extends Page
                 'description' => $plugin->description(),
                 'icon' => $plugin->icon(),
                 'active' => $manager->isActive($key),
+                'settings_url' => $manager->isActive($key) ? $plugin->settingsUrl() : null,
             ])
             ->values()
             ->all();

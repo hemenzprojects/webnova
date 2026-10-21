@@ -62,10 +62,19 @@ webnova/
 
 ### Adding a New Tenant
 
-1. Log into the central admin → Platform → Tenants → New: `id`, `name`, `domain` and the first administrator's email and password
+1. Log into the central admin → Platform → Tenants → New: `id`, `name`, `domain` (optionally "Also add www.") and the first administrator's email and password
 2. The `TenantCreated` event pipeline auto-creates the database and runs tenant migrations
-3. Run `php artisan tenants:migrate` if the tenant DB already existed without migrations
-4. Or use `make seed` to recreate the default `garnet` and `apba` tenants locally
+3. Each domain added requests its Let's Encrypt certificate from Fly automatically; the tenant's page → **Domains** shows the certificate status and the DNS records to give the client ("DNS records" → "Check again"). The client's DNS is the only manual step
+4. Run `php artisan tenants:migrate` if the tenant DB already existed without migrations
+5. Or use `make seed` to recreate the default `garnet` and `apba` tenants locally
+
+### Deleting a Tenant
+
+Central admin → Tenants → **Delete site** (row action or edit page; the admin types the site ID and their own password), or `php artisan tenants:delete {tenant}`. There is no backup or undo. The `TenantDeleted` pipeline drops the `customer_{id}` database, then `App\Jobs\DeleteTenantData` removes `{id}/` on the `public` disk, its theme backups, its Site Health rows and its cached usage. Its domains are deleted one by one first (`DeletingTenant`), which removes their certificates.
+
+### Domains and Certificates
+
+A site's domains are edited on its tenant page (Domains: add, remove, DNS records, request certificate). To change a domain, add the new one, then remove the old one. `DomainCreated`/`DomainDeleted` → `App\Support\SyncDomainCertificate` → `App\Services\FlyCertificates`, which calls Fly's Machines API (`/v1/apps/{app}/certificates`). It needs `FLY_API_TOKEN` (`fly tokens create deploy -a cms-platform`, set with `fly secrets set`); `FLY_APP_NAME` is set by Fly. Without the token (e.g. locally) nothing is called. A Fly error never blocks a domain change: it is logged and the domain shows "No certificate" with a "Request certificate" button. Typed domains are normalised (`TenantResource::normalizeDomain`) and looked up in public DNS as the admin leaves the field (`App\Services\DomainCheck`, Google DNS-over-HTTPS, cached 2 min): the field shows "Domain not found" / "Domain exists" (pointing elsewhere or nowhere yet) / "Points to the platform". A domain that does not exist can only be saved by ticking "I have checked the spelling".
 
 ## Local Development
 

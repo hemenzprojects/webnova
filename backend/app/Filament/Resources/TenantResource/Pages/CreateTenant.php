@@ -14,7 +14,13 @@ class CreateTenant extends CreateRecord
     protected function afterCreate(): void
     {
         // Creating the tenant has already made and migrated its database (TenantCreated pipeline)
-        $this->record->domains()->create(['domain' => $this->data['domain']]);
+        $domain = TenantResource::normalizeDomain($this->data['domain']);
+        $this->record->domains()->create(['domain' => $domain]);
+
+        $www = 'www.'.$domain;
+        if (($this->data['add_www'] ?? false) && ! str_starts_with($domain, 'www.') && ! \Illuminate\Support\Facades\DB::table('domains')->where('domain', $www)->exists()) {
+            $this->record->domains()->create(['domain' => $www]);
+        }
 
         $email = $this->data['admin_email'];
         $password = $this->data['admin_password'];

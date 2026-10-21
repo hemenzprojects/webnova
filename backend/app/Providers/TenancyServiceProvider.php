@@ -36,10 +36,14 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantSaved::class => [],
             Events\UpdatingTenant::class => [],
             Events\TenantUpdated::class => [],
-            Events\DeletingTenant::class => [],
+            Events\DeletingTenant::class => [
+                // One by one rather than by the foreign key, so DomainDeleted removes each certificate
+                fn (Events\DeletingTenant $event) => $event->tenant->domains()->get()->each->delete(),
+            ],
             Events\TenantDeleted::class => [
                 JobPipeline::make([
                     Jobs\DeleteDatabase::class,
+                    \App\Jobs\DeleteTenantData::class,
                 ])->send(function (Events\TenantDeleted $event) {
                     return $event->tenant;
                 })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
@@ -47,13 +51,17 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Domain events
             Events\CreatingDomain::class => [],
-            Events\DomainCreated::class => [],
+            Events\DomainCreated::class => [
+                \App\Support\SyncDomainCertificate::class,
+            ],
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],
             Events\DomainUpdated::class => [],
             Events\DeletingDomain::class => [],
-            Events\DomainDeleted::class => [],
+            Events\DomainDeleted::class => [
+                \App\Support\SyncDomainCertificate::class,
+            ],
 
             // Database events
             Events\DatabaseCreated::class => [],

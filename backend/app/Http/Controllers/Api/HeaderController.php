@@ -21,6 +21,9 @@ class HeaderController extends Controller
         $get = fn (string $key) => $settings->has($key) ? $settings[$key] : HeaderSettings::DEFAULTS[$key][0];
         $flag = fn (string $key) => filter_var($get($key), FILTER_VALIDATE_BOOLEAN);
 
+        // A saved value that is no longer an option falls back to the default
+        $pick = fn (string $key, array $options) => array_key_exists($get($key), $options) ? $get($key) : HeaderSettings::DEFAULTS[$key][0];
+
         $layout = $get('header_layout');
         $button = fn (string $prefix) => $flag("{$prefix}_enabled") && filled($get("{$prefix}_text")) && filled($get("{$prefix}_url"))
             ? [
@@ -40,6 +43,17 @@ class HeaderController extends Controller
             'phone' => $flag('header_show_phone') ? ($branding->contact_phone ?: null) : null,
             'email' => $flag('header_show_email') ? ($branding->contact_email ?: null) : null,
             'social' => $flag('header_show_social') ? SocialPlatforms::fromBranding($branding) : [],
+            'title_bar' => [
+                'bg_color' => $get('title_bar_bg_color') ?: null,
+                'text_color' => $get('title_bar_text_color') ?: null,
+                'image' => $get('title_bar_image') ?: null,
+                'use_featured_image' => $flag('title_bar_use_featured_image'),
+                'overlay_color' => $get('title_bar_overlay_color') ?: '#000000',
+                'overlay_opacity' => max(0, min(100, (int) $get('title_bar_overlay_opacity'))),
+                'height' => $pick('title_bar_height', HeaderSettings::TITLE_BAR_HEIGHTS),
+                'align' => $pick('title_bar_align', HeaderSettings::TITLE_BAR_ALIGNS),
+                'nav' => $pick('title_bar_nav', HeaderSettings::TITLE_BAR_NAVS),
+            ],
         ]);
     }
 }

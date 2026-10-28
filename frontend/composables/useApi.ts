@@ -70,6 +70,11 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/header`, { headers: ssrHeaders() })
   }
 
+  // Appearance → Custom CSS
+  const fetchCustomCss = async () => {
+    return await $fetch<{ css: string }>(`${apiBase}/custom-css`, { headers: ssrHeaders() })
+  }
+
   const fetchFooter = async () => {
     return await $fetch(`${apiBase}/footer`, { headers: ssrHeaders() })
   }
@@ -168,6 +173,7 @@ export const useApi = () => {
     fetchBranding,
     fetchHeader,
     fetchFooter,
+    fetchCustomCss,
     fetchPageForEdit,
     updatePageBlocks,
     publishPage,

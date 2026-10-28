@@ -1,8 +1,8 @@
 <template>
   <!-- The design is chosen in the admin under Customize → Header Settings -->
   <header
-    :class="['shadow-sm z-50', header.sticky ? 'sticky top-0' : 'relative']"
-    :style="{ backgroundColor: 'var(--color-header-bg, #ffffff)' }"
+    :class="['site-header shadow-sm z-50', header.sticky ? 'sticky top-0' : 'relative']"
+    :style="{ backgroundColor: branding?.header_bg_color || 'var(--color-header-bg, #ffffff)' }"
   >
     <!-- Top bar design: coloured strip with social icons and contact details -->
     <div
@@ -209,20 +209,12 @@ const props = defineProps({
   }
 })
 
-const { fetchHeader } = useApi()
 const mobileMenuOpen = ref(false)
 
 // Used until a design is saved in the admin, or if the settings cannot be loaded
 const defaultHeader: HeaderConfig = { layout: 'classic', sticky: true, cta: null, phone: null, email: null, social: [] }
 
-const { data: headerData } = await useAsyncData('header', async () => {
-  try {
-    return await fetchHeader()
-  } catch (error) {
-    console.error('Failed to fetch header settings:', error)
-    return defaultHeader
-  }
-})
+const { data: headerData } = await useHeaderSettings()
 
 const header = computed<HeaderConfig>(() => (headerData.value as HeaderConfig) || defaultHeader)
 

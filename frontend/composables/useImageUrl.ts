@@ -19,6 +19,8 @@ export const useImageUrl = () => {
   const getImageUrl = (path: string | null | undefined, fallback?: string): string => {
     if (!path) return fallback || ''
 
+    if (path.startsWith('data:') || path.startsWith('blob:')) return path
+
     // Rewrite old localhost URLs with the current host
     if (path.startsWith('http://') || path.startsWith('https://')) {
       try {

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\ContactFormController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\CustomCssController;
 use App\Http\Controllers\Api\FooterController;
 use App\Http\Controllers\Api\HeaderController;
 use App\Http\Controllers\Api\ThemeController;
@@ -85,6 +86,9 @@ Route::prefix('v1')->group(function () {
 
     // Footer
     Route::get('/footer', [FooterController::class, 'index']);
+
+    // Custom CSS (Appearance → Custom CSS)
+    Route::get('/custom-css', [CustomCssController::class, 'index']);
 
     // Page-view beacon from the public site (Platform → Site Health)
     Route::post('/track', function (Request $request, SiteHealth $health) {

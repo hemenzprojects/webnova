@@ -137,6 +137,25 @@ class BrandingResource extends Resource
                                     ->default('#FFFFFF'),
                             ])
                             ->columns(2),
+
+                        Forms\Components\Fieldset::make('Header Colors')
+                            ->schema([
+                                Forms\Components\ColorPicker::make('header_bg_color')
+                                    ->label('Header Background')
+                                    ->helperText('Leave empty to use the theme\'s header colour.'),
+                            ])
+                            ->columns(2),
+
+                        Forms\Components\Fieldset::make('Footer Colors')
+                            ->schema([
+                                Forms\Components\ColorPicker::make('footer_bg_color')
+                                    ->label('Footer Background')
+                                    ->helperText('Leave empty to use the theme\'s footer colour.'),
+                                Forms\Components\ColorPicker::make('footer_text_color')
+                                    ->label('Footer Text')
+                                    ->helperText('Leave empty to use the theme\'s. Pick a colour that reads well on the background.'),
+                            ])
+                            ->columns(2),
                     ])
                     ->collapsible(),
 

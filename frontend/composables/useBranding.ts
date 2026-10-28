@@ -19,22 +19,23 @@ export const useBranding = () => {
   }
 
   /**
-   * Apply color theme to the document
+   * Branding's colours as CSS custom properties. They override the theme's
+   * tokens; empty fields leave the theme's colour in place.
    */
-  const applyColorTheme = (branding: any) => {
-    if (!branding || !process.client) return
-
-    const root = document.documentElement
-
-    // Apply CSS custom properties
-    root.style.setProperty('--color-primary', branding.primary_color || '#0A1E3E')
-    root.style.setProperty('--color-primary-light', branding.primary_light || '#1A3A5C')
-    root.style.setProperty('--color-primary-dark', branding.primary_dark || '#050F1F')
-    root.style.setProperty('--color-accent', branding.accent_color || '#00D9FF')
-    root.style.setProperty('--color-accent-light', branding.accent_light || '#33E3FF')
-    root.style.setProperty('--color-accent-dark', branding.accent_dark || '#00A8CC')
-    root.style.setProperty('--color-text', branding.text_color || '#1F2937')
-    root.style.setProperty('--color-background', branding.background_color || '#FFFFFF')
+  const colorVars = (branding: any): Record<string, string> => {
+    if (!branding) return {}
+    const map: Record<string, string> = {
+      '--color-primary': branding.primary_color,
+      '--color-primary-light': branding.primary_light,
+      '--color-primary-dark': branding.primary_dark,
+      '--color-accent': branding.accent_color,
+      '--color-accent-light': branding.accent_light,
+      '--color-accent-dark': branding.accent_dark,
+      '--color-text': branding.text_color,
+      '--color-background': branding.background_color,
+    }
+    // Only colour-shaped values: they are written into a <style> tag
+    return Object.fromEntries(Object.entries(map).filter(([, v]) => typeof v === 'string' && /^[#\w(),.%\s-]+$/.test(v)))
   }
 
   /**
@@ -73,7 +74,7 @@ export const useBranding = () => {
 
   return {
     getBranding,
-    applyColorTheme,
+    colorVars,
     getLogoUrl,
     getFaviconUrl,
     updateFavicon,

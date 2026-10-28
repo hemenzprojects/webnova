@@ -25,62 +25,13 @@
         <div class="space-y-3 mb-4 pb-4 border-b border-gray-100">
           <h5 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Slide Background</h5>
 
-          <!-- Background Image Upload -->
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Background Image</label>
-
-            <!-- Image Preview or Upload Button -->
-            <div v-if="slide.backgroundImage" class="space-y-2">
-              <div class="relative border border-gray-200 rounded-md p-2 group">
-                <img
-                  :src="getImageUrl(slide.backgroundImage) || ''"
-                  alt="Background preview"
-                  class="w-full h-32 object-cover rounded"
-                  @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage not found%3C/text%3E%3C/svg%3E'"
-                />
-                <button
-                  @click="slide.backgroundImage = ''; handleUpdate()"
-                  class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <button
-                @click="openBackgroundImagePicker(index)"
-                class="w-full px-3 py-2 text-sm text-blue-600 hover:text-blue-700 border border-blue-300 hover:border-blue-400 rounded-md transition-colors"
-              >
-                Change Background
-              </button>
-            </div>
-
-            <div v-else class="space-y-2">
-              <button
-                @click="openBackgroundImagePicker(index)"
-                class="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
-              >
-                <div class="flex flex-col items-center gap-2">
-                  <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span class="text-sm font-medium text-gray-600 group-hover:text-blue-600">Upload Background</span>
-                  <span class="text-xs text-gray-500">or enter URL below</span>
-                </div>
-              </button>
-
-              <!-- URL Input Alternative -->
-              <div class="relative">
-                <input
-                  v-model="slide.backgroundImage"
-                  @input="handleUpdate"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Or paste background image URL"
-                />
-              </div>
-            </div>
-          </div>
+          <!-- Background Image: uploaded to the media library (Elementor/ImageUpload.vue) -->
+          <ElementorImageUpload
+            :model-value="slide.backgroundImage || ''"
+            @update:model-value="setBackgroundImage(index, $event)"
+            label="Background Image"
+            type="hero"
+          />
 
           <!-- Background Overlay -->
           <div v-if="slide.backgroundImage">
@@ -126,19 +77,15 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter main heading"
             />
-            <p class="text-xs text-gray-500 mt-1">Tip: Words like "Our Platform" will get auto-styled with gradient</p>
           </div>
 
-          <!-- Heading Color -->
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Heading Color</label>
-            <input
-              v-model="slide.headingColor"
-              @input="handleUpdate"
-              type="color"
-              class="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
-            />
-          </div>
+          <!-- Heading Color (empty: theme / Style tab colour) -->
+          <ElementorThemeColorField
+            :model-value="slide.headingColor"
+            @update:model-value="slide.headingColor = $event; handleUpdate()"
+            label="Heading Color"
+            theme-var="--color-text"
+          />
 
           <!-- Subheading -->
           <div>
@@ -152,16 +99,13 @@
             />
           </div>
 
-          <!-- Subheading Color -->
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Subheading Color</label>
-            <input
-              v-model="slide.subheadingColor"
-              @input="handleUpdate"
-              type="color"
-              class="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
-            />
-          </div>
+          <!-- Subheading Color (empty: theme / Style tab colour) -->
+          <ElementorThemeColorField
+            :model-value="slide.subheadingColor"
+            @update:model-value="slide.subheadingColor = $event; handleUpdate()"
+            label="Subheading Color"
+            theme-var="--color-text-muted"
+          />
 
           <!-- Primary Button -->
           <div class="grid grid-cols-2 gap-2">
@@ -268,62 +212,13 @@
               />
             </div>
 
-            <!-- Featured Image Upload -->
-            <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">Featured Image</label>
-
-              <!-- Image Preview or Upload Button -->
-              <div v-if="slide.featuredImage" class="space-y-2">
-                <div class="relative border border-gray-200 rounded-md p-2 group">
-                  <img
-                    :src="getImageUrl(slide.featuredImage) || ''"
-                    alt="Featured preview"
-                    class="w-full h-32 object-cover rounded"
-                    @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage not found%3C/text%3E%3C/svg%3E'"
-                  />
-                  <button
-                    @click="slide.featuredImage = ''; handleUpdate()"
-                    class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <button
-                  @click="openImagePicker(index)"
-                  class="w-full px-3 py-2 text-sm text-blue-600 hover:text-blue-700 border border-blue-300 hover:border-blue-400 rounded-md transition-colors"
-                >
-                  Change Image
-                </button>
-              </div>
-
-              <div v-else class="space-y-2">
-                <button
-                  @click="openImagePicker(index)"
-                  class="w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
-                >
-                  <div class="flex flex-col items-center gap-2">
-                    <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-sm font-medium text-gray-600 group-hover:text-blue-600">Upload Image</span>
-                    <span class="text-xs text-gray-500">or enter URL below</span>
-                  </div>
-                </button>
-
-                <!-- URL Input Alternative -->
-                <div class="relative">
-                  <input
-                    v-model="slide.featuredImage"
-                    @input="handleUpdate"
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Or paste image URL"
-                  />
-                </div>
-              </div>
-            </div>
+            <!-- Featured Image: uploaded to the media library -->
+            <ElementorImageUpload
+              :model-value="slide.featuredImage || ''"
+              @update:model-value="slide.featuredImage = $event; handleUpdate()"
+              label="Featured Image"
+              type="featured"
+            />
 
             <!-- Image Display Mode -->
             <div v-if="slide.featuredImage">
@@ -441,23 +336,32 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-const { getImageUrl } = useImageUrl()
-
 const props = defineProps<{
   widget: any
 }>()
 
 const emit = defineEmits(['update'])
 
+// Colours older slides were given by default mean "theme colour" (as in PageBuilder/HeroSlider.vue).
+// Saving marks the slider with themeColors, after which any colour, those two included, is kept as chosen.
+const LEGACY_COLORS: Record<string, string> = { headingColor: '#1e293b', subheadingColor: '#64748b' }
+const normaliseSlides = (slides: any[]) => props.widget.data.themeColors ? slides : slides.map((slide) => {
+  const out = { ...slide }
+  for (const [key, legacy] of Object.entries(LEGACY_COLORS)) {
+    if (typeof out[key] === 'string' && out[key].toLowerCase() === legacy) out[key] = ''
+  }
+  return out
+})
+
 const localData = ref({
-  slides: props.widget.data.slides || [{
+  slides: props.widget.data.slides ? normaliseSlides(props.widget.data.slides) : [{
     backgroundImage: '',
     backgroundOverlay: 'gradient',
     preHeading: '',
     heading: 'Welcome to Our Platform',
-    headingColor: '#1e293b',
+    headingColor: '',
     subheading: 'Discover amazing features and services designed to help you succeed.',
-    subheadingColor: '#64748b',
+    subheadingColor: '',
     buttonText: 'Get Started',
     buttonLink: '#',
     secondaryButtonText: 'Learn More',
@@ -479,60 +383,15 @@ const localData = ref({
 })
 
 const handleUpdate = () => {
-  emit('update', { ...localData.value })
+  emit('update', { ...localData.value, themeColors: true })
 }
 
-const openImagePicker = (slideIndex: number) => {
-  // Create a file input element
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-
-  input.onchange = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-
-    if (file) {
-      // For now, we'll use a data URL. In production, you'd upload to server
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string
-        localData.value.slides[slideIndex].featuredImage = imageUrl
-        handleUpdate()
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  input.click()
-}
-
-const openBackgroundImagePicker = (slideIndex: number) => {
-  // Create a file input element
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-
-  input.onchange = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string
-        localData.value.slides[slideIndex].backgroundImage = imageUrl
-        // Set default overlay for better text readability
-        if (!localData.value.slides[slideIndex].backgroundOverlay) {
-          localData.value.slides[slideIndex].backgroundOverlay = 'gradient'
-        }
-        handleUpdate()
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  input.click()
+const setBackgroundImage = (slideIndex: number, path: string) => {
+  const slide = localData.value.slides[slideIndex]
+  slide.backgroundImage = path
+  // Default overlay so the text stays readable on a photo
+  if (path && !slide.backgroundOverlay) slide.backgroundOverlay = 'gradient'
+  handleUpdate()
 }
 
 const addSlide = () => {
@@ -541,9 +400,9 @@ const addSlide = () => {
     backgroundOverlay: 'gradient',
     preHeading: '',
     heading: 'New Slide',
-    headingColor: '#1e293b',
+    headingColor: '',
     subheading: 'Enter your slide description here',
-    subheadingColor: '#64748b',
+    subheadingColor: '',
     buttonText: 'Learn More',
     buttonLink: '#',
     secondaryButtonText: '',
@@ -569,7 +428,7 @@ const removeSlide = (index: number) => {
 watch(() => props.widget.data, (newData) => {
   if (newData && JSON.stringify(newData) !== JSON.stringify(localData.value)) {
     localData.value = {
-      slides: newData.slides || localData.value.slides,
+      slides: newData.slides ? normaliseSlides(newData.slides) : localData.value.slides,
       autoplay: newData.autoplay ?? localData.value.autoplay,
       interval: newData.interval || localData.value.interval,
       showIndicators: newData.showIndicators ?? localData.value.showIndicators,

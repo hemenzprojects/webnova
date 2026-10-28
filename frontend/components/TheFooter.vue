@@ -1,5 +1,5 @@
 <template>
-  <footer class="text-white py-12" :style="{ backgroundColor: 'var(--color-footer-bg, var(--color-primary, #0A1E3E))' }">
+  <footer class="site-footer py-12" :style="footerStyle">
     <div class="container mx-auto px-4">
       <!-- Columns and their widgets are set in the admin under Customize → Footer Settings -->
       <div v-if="columns.length" :class="gridClass">
@@ -9,12 +9,12 @@
             <h4 v-if="widget.type === 'heading'" class="text-lg font-bold -mb-4">{{ widget.text }}</h4>
 
             <!-- Text -->
-            <div v-else-if="widget.type === 'text'" class="footer-rich-text text-gray-300" v-html="widget.html"></div>
+            <div v-else-if="widget.type === 'text'" class="footer-rich-text footer-muted" v-html="widget.html"></div>
 
             <!-- Menu -->
             <template v-else-if="widget.type === 'menu'">
               <h4 v-if="widget.heading" class="font-semibold mb-4">{{ widget.heading }}</h4>
-              <ul class="space-y-2 text-gray-300">
+              <ul class="space-y-2 footer-muted">
                 <li v-for="item in widget.items" :key="item.id">
                   <component :is="linkComponent(item)" v-bind="linkProps(item)" :class="linkClass(item)">
                     {{ item.label }}
@@ -58,7 +58,7 @@
             <!-- Contact details (from Branding) -->
             <template v-else-if="widget.type === 'contact' && hasContact">
               <h4 v-if="widget.heading" class="font-semibold mb-4">{{ widget.heading }}</h4>
-              <ul class="space-y-2 text-gray-300">
+              <ul class="space-y-2 footer-muted">
                 <li v-if="branding?.contact_address" class="whitespace-pre-line">{{ branding.contact_address }}</li>
                 <li v-if="branding?.contact_phone">
                   <a :href="`tel:${branding.contact_phone}`" class="hover:text-accent transition">{{ branding.contact_phone }}</a>
@@ -72,7 +72,7 @@
         </div>
       </div>
 
-      <div :class="['text-center text-gray-400', columns.length ? 'border-t border-gray-700 mt-8 pt-8' : '']">
+      <div :class="['text-center footer-faint', columns.length ? 'footer-divider border-t mt-8 pt-8' : '']">
         <p>{{ copyright }}</p>
       </div>
     </div>
@@ -109,6 +109,12 @@ const { data: footerData } = await useAsyncData('footer', async () => {
     return { columns: null, copyright: null }
   }
 })
+
+// Branding's footer colours win over the theme's; the muted text, links and divider derive from the text colour
+const footerStyle = computed(() => ({
+  backgroundColor: props.branding?.footer_bg_color || 'var(--color-footer-bg, var(--color-primary, #0A1E3E))',
+  color: props.branding?.footer_text_color || 'var(--color-footer-text, #FFFFFF)',
+}))
 
 const siteName = computed(() => props.branding?.site_name || 'WEBNOVA')
 
@@ -193,10 +199,19 @@ const linkProps = (item: MenuItem) => {
 }
 
 const linkClass = (item: MenuItem) =>
-  item.type === 'category' || !item.url ? 'font-medium text-white' : 'hover:text-accent transition'
+  item.type === 'category' || !item.url ? 'font-medium' : 'hover:text-accent transition'
 </script>
 
 <style>
+.footer-muted {
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+.footer-faint {
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+.footer-divider {
+  border-color: color-mix(in srgb, currentColor 20%, transparent);
+}
 /* Text widget content comes from the admin's rich text editor */
 .footer-rich-text > * + * {
   margin-top: 0.75rem;
@@ -214,6 +229,6 @@ const linkClass = (item: MenuItem) =>
   padding-left: 1.25rem;
 }
 .footer-rich-text strong {
-  color: #fff;
+  color: inherit;
 }
 </style>

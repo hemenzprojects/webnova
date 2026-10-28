@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Admin\Concerns\InFunctionalAreaPage;
+use App\Filament\Resources\PageResource;
 use App\Models\Branding;
 use App\Models\Setting;
 use Filament\Actions\Action;
@@ -13,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
 
 class HeaderSettings extends Page implements HasForms
 {
@@ -57,7 +59,25 @@ class HeaderSettings extends Page implements HasForms
         'header_cta2_text' => ['', 'text'],
         'header_cta2_url' => ['', 'text'],
         'header_cta2_new_tab' => [false, 'boolean'],
+        'title_bar_bg_color' => ['', 'text'],
+        'title_bar_text_color' => ['', 'text'],
+        'title_bar_image' => [null, 'image'],
+        'title_bar_use_featured_image' => [false, 'boolean'],
+        'title_bar_overlay_color' => ['#000000', 'text'],
+        'title_bar_overlay_opacity' => ['50', 'text'],
+        'title_bar_height' => ['medium', 'text'],
+        'title_bar_align' => ['left', 'text'],
+        'title_bar_nav' => ['back', 'text'],
     ];
+
+    /**
+     * Page title bar options. Rendered by frontend/components/PageTitleBar.vue.
+     */
+    public const TITLE_BAR_HEIGHTS = ['small' => 'Small', 'medium' => 'Medium', 'large' => 'Large'];
+
+    public const TITLE_BAR_ALIGNS = ['left' => 'Left', 'center' => 'Centre'];
+
+    public const TITLE_BAR_NAVS = ['back' => '"Back to Home" link', 'breadcrumbs' => 'Breadcrumbs (Home › News › Article)', 'none' => 'Nothing'];
 
     protected static ?string $navigationIcon = 'heroicon-o-window';
 
@@ -79,7 +99,11 @@ class HeaderSettings extends Page implements HasForms
         foreach (self::DEFAULTS as $key => [$default, $type]) {
             $value = $saved->has($key) ? $saved[$key] : $default;
 
-            $state[$key] = $type === 'boolean' ? filter_var($value, FILTER_VALIDATE_BOOLEAN) : $value;
+            $state[$key] = match ($type) {
+                'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+                'image' => filled($value) ? $value : null,
+                default => $value,
+            };
         }
 
         $this->form->fill($state);
@@ -172,6 +196,59 @@ class HeaderSettings extends Page implements HasForms
                             ->label('Open in a new tab')
                             ->visible(fn (Get $get): bool => (bool) $get('header_cta2_enabled')),
                     ]),
+
+                Forms\Components\Section::make('Page title bar')
+                    ->description('The band under the menu with the page title, on news, event and service pages. Pages made in the page editor use their own hero section instead.')
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\ColorPicker::make('title_bar_bg_color')
+                            ->label('Background colour')
+                            ->helperText('Leave empty to use the main brand colour.'),
+                        Forms\Components\ColorPicker::make('title_bar_text_color')
+                            ->label('Text colour')
+                            ->helperText('Leave empty for white.'),
+                        Forms\Components\FileUpload::make('title_bar_image')
+                            ->label('Background image')
+                            ->helperText('Optional. A wide photo works best (about 1920 × 400).')
+                            ->image()
+                            ->disk('public')
+                            ->directory(PageResource::tenantDir('title-bar'))
+                            ->maxSize(5120)
+                            ->live()
+                            ->columnSpanFull(),
+                        Forms\Components\Checkbox::make('title_bar_use_featured_image')
+                            ->label('Use the article\'s, event\'s or service\'s own featured image when it has one')
+                            ->helperText('Falls back to the background image above, then the background colour.')
+                            ->live()
+                            ->columnSpanFull(),
+                        Forms\Components\ColorPicker::make('title_bar_overlay_color')
+                            ->label('Overlay colour')
+                            ->helperText('Laid over the image so the text stays readable.')
+                            ->visible(fn (Get $get): bool => filled($get('title_bar_image')) || (bool) $get('title_bar_use_featured_image')),
+                        Forms\Components\TextInput::make('title_bar_overlay_opacity')
+                            ->label('Overlay strength')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->suffix('%')
+                            ->required()
+                            ->visible(fn (Get $get): bool => filled($get('title_bar_image')) || (bool) $get('title_bar_use_featured_image')),
+                        Forms\Components\Select::make('title_bar_height')
+                            ->label('Height')
+                            ->options(self::TITLE_BAR_HEIGHTS)
+                            ->required()
+                            ->selectablePlaceholder(false),
+                        Forms\Components\Select::make('title_bar_align')
+                            ->label('Text alignment')
+                            ->options(self::TITLE_BAR_ALIGNS)
+                            ->required()
+                            ->selectablePlaceholder(false),
+                        Forms\Components\Radio::make('title_bar_nav')
+                            ->label('Above the title, show')
+                            ->options(self::TITLE_BAR_NAVS)
+                            ->required()
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->statePath('data')
             // View-only roles see the settings but cannot change them
@@ -205,9 +282,16 @@ class HeaderSettings extends Page implements HasForms
             Setting::set(
                 $key,
                 $type === 'boolean' ? (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? '1' : '0') : (string) $value,
-                $type,
+                $type === 'image' ? 'text' : $type,
                 self::GROUP,
             );
+        }
+
+        // A replaced or removed title bar image is deleted, so it stops counting towards the storage limit
+        $oldImage = $saved['title_bar_image'] ?? null;
+        $tenantId = tenancy()->tenant?->id;
+        if (filled($oldImage) && $oldImage !== ($data['title_bar_image'] ?? null) && $tenantId && str_starts_with($oldImage, "{$tenantId}/")) {
+            Storage::disk('public')->delete($oldImage);
         }
 
         Notification::make()

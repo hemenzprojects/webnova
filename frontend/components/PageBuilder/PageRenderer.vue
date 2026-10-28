@@ -20,7 +20,7 @@
               flexGrow: 0,
               flexShrink: 0
             }"
-            class="space-y-4"
+            class="space-y-4 min-w-0"
           >
             <template v-for="(block, blockIndex) in column.blocks" :key="block.id || `block-${blockIndex}`">
               <PageBuilderBlockWrapper :styles="block.data?._style">

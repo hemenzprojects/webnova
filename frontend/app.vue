@@ -16,8 +16,8 @@
 </template>
 
 <script setup>
-const { fetchBranding, fetchComingSoon } = useApi()
-const { applyColorTheme, updateFavicon } = useBranding()
+const { fetchBranding, fetchComingSoon, fetchCustomCss } = useApi()
+const { colorVars, updateFavicon } = useBranding()
 const route = useRoute()
 
 // Fetch branding settings
@@ -55,19 +55,24 @@ if (comingSoon.value?.enabled) {
   }
 }
 
-// Apply branding theme on mount
-onMounted(() => {
-  if (branding.value) {
-    applyColorTheme(branding.value)
-    updateFavicon(branding.value)
-  }
+// Branding colours go in the server-rendered HTML so the page never shows the theme's colours first.
+// `html:root` outranks the theme plugin's `:root`, whatever order the two styles end up in.
+useHead({
+  style: [{
+    key: 'branding-colors',
+    innerHTML: computed(() => {
+      const vars = Object.entries(colorVars(branding.value)).map(([k, v]) => `${k}: ${v};`).join(' ')
+      return vars ? `html:root { ${vars} }` : ''
+    }),
+  }],
 })
 
-// Watch for branding changes
-watch(branding, (newBranding) => {
-  if (newBranding) {
-    applyColorTheme(newBranding)
-    updateFavicon(newBranding)
-  }
+// Appearance → Custom CSS, last so it wins over the theme's and Branding's styles
+const { data: customCss } = await useAsyncData('custom-css', () => fetchCustomCss().catch(() => null))
+useHead({
+  style: [{ key: 'custom-css', innerHTML: computed(() => customCss.value?.css || ''), tagPriority: 'low' }],
 })
+
+onMounted(() => updateFavicon(branding.value))
+watch(branding, (newBranding) => updateFavicon(newBranding))
 </script>

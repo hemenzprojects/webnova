@@ -12,7 +12,7 @@
         <div class="absolute inset-0 z-0 w-full h-full">
           <div v-if="slide.backgroundImage" class="absolute inset-0">
             <img
-              :src="slide.backgroundImage"
+              :src="getImageUrl(slide.backgroundImage) || ''"
               alt="Background"
               class="w-full h-full object-cover"
             />
@@ -23,7 +23,8 @@
               :class="getOverlayClass(slide.backgroundOverlay)"
             ></div>
           </div>
-          <div v-else class="absolute inset-0 bg-gradient-to-br from-gray-50 to-white"></div>
+          <!-- No slide image: the widget's Style background shows through, else its Style colour (--block-bg) or the theme's muted surface -->
+          <div v-else class="absolute inset-0" :style="{ backgroundColor: hasWidgetBackground ? 'transparent' : 'var(--block-bg, var(--color-surface-muted, #f8fafc))' }"></div>
         </div>
 
         <!-- Modern Split Layout -->
@@ -31,56 +32,59 @@
           <div class="w-full" :class="slide.showFeaturedCard !== false ? 'grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center' : 'max-w-4xl mx-auto'">
 
             <!-- Left Content -->
-            <div class="slide-content space-y-6">
+            <div class="slide-content space-y-6" :class="alignClass(slide)">
               <!-- Pre-heading -->
-              <div v-if="slide.preHeading" class="text-lg md:text-xl font-normal text-gray-600">
+              <div v-if="slide.preHeading" class="text-lg md:text-xl font-normal" :style="{ color: 'var(--color-text-muted, #64748b)' }">
                 {{ slide.preHeading }}
               </div>
 
               <!-- Main Heading -->
               <h1
-                class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight"
-                :style="{ color: slide.headingColor || '#1e293b' }"
+                class="text-4xl md:text-5xl lg:text-6xl leading-tight"
+                :style="{ color: slideColor(slide.headingColor, LEGACY_HEADING_COLOR) || 'var(--color-text, #1e293b)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--font-heading-weight, 700)' }"
               >
-                <span v-html="formatHeading(slide.heading || 'Welcome')"></span>
+                {{ slide.heading || 'Welcome' }}
               </h1>
 
               <!-- Subheading / Description -->
               <p
                 v-if="slide.subheading"
                 class="text-lg md:text-xl leading-relaxed max-w-2xl"
-                :style="{ color: slide.subheadingColor || '#64748b' }"
+                :class="{ 'mx-auto': slide.contentAlign === 'center', 'ml-auto': slide.contentAlign === 'right' }"
+                :style="{ color: slideColor(slide.subheadingColor, LEGACY_SUBHEADING_COLOR) || 'var(--color-text-muted, #64748b)' }"
               >
                 {{ slide.subheading }}
               </p>
 
               <!-- CTA Buttons -->
-              <div class="flex flex-wrap gap-4 pt-4">
-                <a
+              <div class="flex flex-wrap gap-3 pt-2" :class="{ 'justify-center': slide.contentAlign === 'center', 'justify-end': slide.contentAlign === 'right' }">
+                <SmartLink
                   v-if="slide.buttonText"
-                  :href="slide.buttonLink || '#'"
-                  class="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl bg-slate-900 text-white hover:bg-slate-800"
+                  :to="slide.buttonLink || '#'"
+                  class="inline-flex items-center gap-2 px-6 py-3 font-semibold text-white bg-primary border-2 border-transparent hover:opacity-90 transition"
+                  :style="{ borderRadius: 'var(--radius-button, 8px)' }"
                 >
                   {{ slide.buttonText }}
-                </a>
-                <a
+                </SmartLink>
+                <SmartLink
                   v-if="slide.secondaryButtonText"
-                  :href="slide.secondaryButtonLink || '#'"
-                  class="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  :to="slide.secondaryButtonLink || '#'"
+                  class="inline-flex items-center gap-2 px-6 py-3 font-semibold border-2 hover:opacity-80 transition"
+                  :style="{ borderRadius: 'var(--radius-button, 8px)', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }"
                 >
                   {{ slide.secondaryButtonText }}
-                </a>
+                </SmartLink>
               </div>
             </div>
 
             <!-- Right Featured Card -->
             <div v-if="slide.showFeaturedCard !== false" class="hidden lg:block featured-card">
-              <div class="relative rounded-3xl shadow-2xl overflow-hidden min-h-[400px]" :class="getFeaturedCardClasses(slide)">
+              <div class="relative shadow-2xl overflow-hidden min-h-[400px]" :class="getFeaturedCardClasses(slide)" :style="{ borderRadius: 'var(--radius-card, 24px)' }">
 
                 <!-- Background Image (if provided) -->
                 <div v-if="slide.featuredImage && slide.featuredImageMode === 'background'" class="absolute inset-0">
                   <img
-                    :src="slide.featuredImage"
+                    :src="getImageUrl(slide.featuredImage) || ''"
                     :alt="slide.featuredTitle || 'Featured'"
                     class="w-full h-full object-cover"
                   />
@@ -89,21 +93,21 @@
                 </div>
 
                 <!-- Gradient Overlay (when no background image or overlay mode) -->
-                <div v-else class="absolute inset-0 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600"></div>
+                <div v-else class="absolute inset-0" :style="{ background: cardGradient }"></div>
 
                 <!-- Split Layout (Image + Text side by side) -->
                 <div v-if="slide.featuredImage && slide.featuredImageMode === 'split'" class="relative z-10 h-full grid grid-cols-2 gap-0">
                   <!-- Left: Image -->
                   <div class="relative">
                     <img
-                      :src="slide.featuredImage"
+                      :src="getImageUrl(slide.featuredImage) || ''"
                       :alt="slide.featuredTitle || 'Featured'"
                       class="w-full h-full object-cover"
                     />
                   </div>
 
                   <!-- Right: Text Content -->
-                  <div class="flex items-center justify-center p-8 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600">
+                  <div class="flex items-center justify-center p-8" :style="{ background: cardGradient }">
                     <div class="text-white space-y-4 text-center">
                       <!-- Featured Label -->
                       <div class="flex items-center gap-2">
@@ -113,7 +117,7 @@
                       </div>
 
                       <!-- Featured Heading -->
-                      <h2 class="text-3xl md:text-4xl font-bold leading-tight">
+                      <h2 class="text-3xl md:text-4xl leading-tight" :style="headingFont">
                         {{ slide.featuredTitle || 'Innovation At Your Fingertips' }}
                       </h2>
 
@@ -130,14 +134,14 @@
                   <!-- Top: Image -->
                   <div class="flex-1 relative">
                     <img
-                      :src="slide.featuredImage"
+                      :src="getImageUrl(slide.featuredImage) || ''"
                       :alt="slide.featuredTitle || 'Featured'"
                       class="w-full h-full object-cover"
                     />
                   </div>
 
                   <!-- Bottom: Text Content -->
-                  <div class="p-8 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600">
+                  <div class="p-8" :style="{ background: cardGradient }">
                     <div class="text-white space-y-3 text-center">
                       <!-- Featured Label -->
                       <div class="flex items-center gap-2">
@@ -147,7 +151,7 @@
                       </div>
 
                       <!-- Featured Heading -->
-                      <h2 class="text-2xl md:text-3xl font-bold leading-tight">
+                      <h2 class="text-2xl md:text-3xl leading-tight" :style="headingFont">
                         {{ slide.featuredTitle || 'Innovation At Your Fingertips' }}
                       </h2>
 
@@ -170,7 +174,7 @@
                     </div>
 
                     <!-- Featured Heading -->
-                    <h2 class="text-4xl md:text-5xl font-bold leading-tight">
+                    <h2 class="text-4xl md:text-5xl leading-tight" :style="headingFont">
                       {{ slide.featuredTitle || 'Innovation At Your Fingertips' }}
                     </h2>
 
@@ -225,7 +229,7 @@
         @click="goToSlide(index)"
         class="transition-all duration-300 rounded-full"
         :class="currentSlide === index
-          ? 'bg-slate-900 w-10 md:w-12 h-3'
+          ? 'bg-primary w-10 md:w-12 h-3'
           : 'bg-gray-300 hover:bg-gray-400 w-3 h-3'"
         :aria-label="`Go to slide ${index + 1}`"
       />
@@ -235,6 +239,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { BlockStyle } from '~/utils/blockStyle'
+
+const { getImageUrl } = useImageUrl()
 
 interface Slide {
   backgroundImage?: string
@@ -259,6 +266,9 @@ interface Slide {
 
 interface HeroSliderData {
   slides: Slide[]
+  _style?: BlockStyle
+  // Set once saved by the current editor: slide colours are then taken as chosen
+  themeColors?: boolean
   autoplay?: boolean
   interval?: number
   showIndicators?: boolean
@@ -286,23 +296,24 @@ const heightClass = computed(() => {
   return heightMap[props.data.height || 'large'] || heightMap.large
 })
 
-const formatHeading = (heading: string) => {
-  if (!heading) return 'Welcome'
+// Colours new slides used to be given. On sliders not yet re-saved in the current editor
+// (no themeColors flag) they mean "not set", so the theme and Style colours apply.
+const LEGACY_HEADING_COLOR = '#1e293b'
+const LEGACY_SUBHEADING_COLOR = '#64748b'
+const slideColor = (value: string | undefined, legacy: string) =>
+  value && (props.data.themeColors || value.toLowerCase() !== legacy) ? value : undefined
 
-  // Split heading and apply gradient to specific words
-  const gradientWords = ['Our Platform', 'Platform', 'Our']
-  let formattedHeading = heading
+// A background image or colour set on the Style tab is painted by BlockWrapper behind the slider
+const hasWidgetBackground = computed(() => {
+  const st = props.data._style
+  return !!(st?.background?.image || st?.background?.color)
+})
 
-  gradientWords.forEach(word => {
-    const regex = new RegExp(`\\b${word}\\b`, 'gi')
-    formattedHeading = formattedHeading.replace(
-      regex,
-      `<span class="bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">${word}</span>`
-    )
-  })
+const alignClass = (slide: Slide) =>
+  ({ center: 'text-center', right: 'text-right' } as Record<string, string>)[slide.contentAlign || ''] || 'text-left'
 
-  return formattedHeading
-}
+const cardGradient = 'linear-gradient(135deg, var(--color-primary, #0d9488), var(--color-primary-dark, #047857))'
+const headingFont = { fontFamily: 'var(--font-heading)', fontWeight: 'var(--font-heading-weight, 700)' }
 
 const getFeaturedCardClasses = (slide: Slide) => {
   // Add flex classes based on layout mode

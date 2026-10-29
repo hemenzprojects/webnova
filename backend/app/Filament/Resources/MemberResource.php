@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\MemberResource\Pages;
 use App\Filament\Resources\MemberResource\RelationManagers;
 use App\Models\Member;
@@ -15,6 +16,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MemberResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
+    protected static ?int $navigationSort = 5;
+
     protected static ?string $model = Member::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -54,7 +61,7 @@ class MemberResource extends Resource
                         Forms\Components\FileUpload::make('logo')
                             ->image()
                             ->disk('public')
-                            ->directory('members/logos')
+                            ->directory(PageResource::tenantDir('members/logos'))
                             ->visibility('public')
                             ->imageEditor()
                             ->imageEditorAspectRatios([

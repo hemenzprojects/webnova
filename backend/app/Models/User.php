@@ -6,6 +6,7 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -23,6 +24,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role_id',
     ];
 
     /**
@@ -49,11 +51,25 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Determine if the user can access the Filament admin panel.
+     * Site admins need a role (System Administration → Users). On the central
+     * domain, platform users have no roles and keep full access to the platform pages.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Allow all authenticated users to access the admin panel
-        return true;
+        if (! tenancy()->initialized) {
+            return true;
+        }
+
+        return $this->role_id !== null;
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function isAdministrator(): bool
+    {
+        return (bool) $this->role?->is_admin;
     }
 }

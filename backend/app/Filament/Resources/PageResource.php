@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Admin\Concerns\InFunctionalArea;
 use App\Filament\Resources\PageResource\Pages;
 use App\Filament\Resources\PageResource\RelationManagers;
 use App\Models\Page;
@@ -17,9 +18,26 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PageResource extends Resource
 {
+    use InFunctionalArea;
+
+    protected static string $area = 'content';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $model = Page::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    /** Membership plugin's member portal (Member accounts feature) is on for this site */
+    public static function memberPortalOn(): bool
+    {
+        return app(\App\Plugins\PluginManager::class)->featureIsActive('membership', \App\Plugins\Membership\MembershipPlugin::FEATURE_ACCOUNTS);
+    }
+
+    public static function tenantDir(string $dir): \Closure
+    {
+        return fn() => (tenancy()->tenant?->id ? tenancy()->tenant->id . '/' : '') . $dir;
+    }
 
     public static function form(Form $form): Form
     {
@@ -42,12 +60,24 @@ class PageResource extends Resource
                                 Forms\Components\FileUpload::make('featured_image')
                                     ->image()
                                     ->disk('public')
-                                    ->directory('pages/featured')
+                                    ->directory(self::tenantDir('pages/featured'))
                                     ->imageEditor()
                                     ->maxSize(5120),
                                 Forms\Components\Toggle::make('is_published')
                                     ->required()
                                     ->default(false),
+                                // Membership plugin, Member accounts feature; still shown for a
+                                // members-only page while it is off, so it can be made public again
+                                Forms\Components\Select::make('visibility')
+                                    ->label('Who can see this page')
+                                    ->options(Page::VISIBILITIES)
+                                    ->default(Page::VISIBILITY_PUBLIC)
+                                    ->required()
+                                    ->native(false)
+                                    ->helperText(fn (?Page $record) => static::memberPortalOn()
+                                        ? 'Members only: signed-in members with an active membership, and admins. Everyone else sees a "members only" message with a sign-in button.'
+                                        : 'The member portal is switched off (Membership → Settings → Features), so members-only pages are visible to admins only.')
+                                    ->visible(fn (?Page $record) => static::memberPortalOn() || $record?->isMembersOnly()),
                                 Forms\Components\TextInput::make('order')
                                     ->numeric()
                                     ->default(0),
@@ -148,7 +178,7 @@ class PageResource extends Resource
                                                     ->image()
                                                     ->required()
                                                     ->disk('public')
-                                                    ->directory('pages/images')
+                                                    ->directory(self::tenantDir('pages/images'))
                                                     ->imageEditor()
                                                     ->maxSize(5120),
                                                 Forms\Components\TextInput::make('alt')
@@ -255,7 +285,7 @@ class PageResource extends Resource
                                                             ->label('Slide Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/carousel')
+                                                            ->directory(self::tenantDir('pages/carousel'))
                                                             ->imageEditor()
                                                             ->maxSize(5120)
                                                             ->required(),
@@ -321,7 +351,7 @@ class PageResource extends Resource
                                                             ->label('Background Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/hero-slider')
+                                                            ->directory(self::tenantDir('pages/hero-slider'))
                                                             ->imageEditor()
                                                             ->maxSize(5120)
                                                             ->required(),
@@ -379,7 +409,7 @@ class PageResource extends Resource
                                                                     ->label('Foreground Image/Icon')
                                                                     ->image()
                                                                     ->disk('public')
-                                                                    ->directory('pages/hero-slider')
+                                                                    ->directory(self::tenantDir('pages/hero-slider'))
                                                                     ->imageEditor(),
                                                                 Forms\Components\Select::make('foregroundPosition')
                                                                     ->label('Foreground Position')
@@ -474,13 +504,13 @@ class PageResource extends Resource
                                                     ->label('Background Image')
                                                     ->image()
                                                     ->disk('public')
-                                                    ->directory('pages/hero')
+                                                    ->directory(self::tenantDir('pages/hero'))
                                                     ->imageEditor(),
                                                 Forms\Components\FileUpload::make('foregroundImage')
                                                     ->label('Foreground Image (Optional)')
                                                     ->image()
                                                     ->disk('public')
-                                                    ->directory('pages/hero')
+                                                    ->directory(self::tenantDir('pages/hero'))
                                                     ->imageEditor(),
                                                 Forms\Components\Select::make('overlay')
                                                     ->options([
@@ -655,7 +685,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public')
                                                             ->helperText('Background image with white overlay'),
                                                     ])
@@ -837,7 +867,7 @@ class PageResource extends Resource
                                                                 Forms\Components\FileUpload::make('circleImage')
                                                                     ->label('Circle Image')
                                                                     ->image()
-                                                                    ->directory('page-builder')
+                                                                    ->directory(self::tenantDir('page-builder'))
                                                                     ->visibility('public'),
                                                                 Forms\Components\Select::make('circleImageSize')
                                                                     ->label('Image Size')
@@ -931,7 +961,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public')
                                                             ->helperText('Background image with overlay'),
                                                         Forms\Components\ColorPicker::make('overlayColor')
@@ -1067,7 +1097,7 @@ class PageResource extends Resource
                                                             ->label('Card Image')
                                                             ->image()
                                                             ->disk('public')
-                                                            ->directory('pages/cards')
+                                                            ->directory(self::tenantDir('pages/cards'))
                                                             ->imageEditor(),
                                                         Forms\Components\TextInput::make('title')
                                                             ->label('Card Title')
@@ -1228,7 +1258,7 @@ class PageResource extends Resource
                                                         Forms\Components\FileUpload::make('backgroundImage')
                                                             ->label('Background Image (Optional)')
                                                             ->image()
-                                                            ->directory('page-builder')
+                                                            ->directory(self::tenantDir('page-builder'))
                                                             ->visibility('public'),
                                                         Forms\Components\Toggle::make('showDecorations')
                                                             ->label('Show Network Decorations')
@@ -1690,6 +1720,12 @@ class PageResource extends Resource
                     ]),
                 Tables\Columns\IconColumn::make('is_published')
                     ->boolean(),
+                Tables\Columns\TextColumn::make('visibility')
+                    ->label('Who can see it')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => Page::VISIBILITIES[$state] ?? $state)
+                    ->color(fn (string $state) => $state === Page::VISIBILITY_MEMBERS ? 'warning' : 'gray')
+                    ->visible(fn () => static::memberPortalOn() || Page::where('visibility', Page::VISIBILITY_MEMBERS)->exists()),
                 Tables\Columns\TextColumn::make('order')
                     ->numeric()
                     ->sortable(),
@@ -1707,10 +1743,11 @@ class PageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('visual_editor')
+                    ->authorize(fn () => static::canManage())
                     ->label('Page Builder')
                     ->icon('heroicon-o-cube')
                     ->color('primary')
-                    ->url(fn (Page $record): string => config('app.frontend_url', 'http://localhost:3000') . "/elementor/{$record->id}")
+                    ->url(fn (Page $record): string => request()->getSchemeAndHttpHost() . "/elementor/{$record->id}")
                     ->openUrlInNewTab()
                     ->visible(fn (Page $record): bool => $record->template_type === 'builder'),
                 Tables\Actions\EditAction::make(),

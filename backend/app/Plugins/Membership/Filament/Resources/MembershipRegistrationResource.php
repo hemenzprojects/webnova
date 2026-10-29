@@ -9,7 +9,10 @@ use App\Plugins\Membership\Models\MembershipForm;
 use App\Plugins\Membership\Models\MembershipRegistration;
 use App\Plugins\Membership\Models\MembershipType;
 use App\Plugins\Membership\Support\FormSchema;
+use App\Plugins\Membership\Support\ApplicationFiles;
 use App\Plugins\Membership\Support\MemberAccounts;
+use App\Plugins\Membership\Support\MembershipEmails;
+use App\Plugins\Membership\Support\MembershipMailer;
 use App\Plugins\Membership\Support\Registrar;
 use Filament\Forms;
 use Filament\Infolists;
@@ -34,7 +37,9 @@ class MembershipRegistrationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-plus';
 
-    protected static ?string $navigationLabel = 'Registrations';
+    protected static ?string $navigationLabel = 'Applications';
+
+    protected static ?string $modelLabel = 'application';
 
     protected static ?int $navigationSort = 2;
 
@@ -116,16 +121,26 @@ class MembershipRegistrationResource extends Resource
         /** @var MembershipRegistration $record */
         $record = $infolist->getRecord();
 
+        // Documents link to their admin-only download
+        $fileKeys = collect(FormSchema::fields($record->form_snapshot ?? []))
+            ->filter(fn ($field) => ApplicationFiles::isFile(($record->answers ?? [])[$field['key']] ?? null))
+            ->pluck('key', 'label');
+
         $answers = collect($record->readableAnswers())
             ->map(fn ($value, $label) => Infolists\Components\TextEntry::make('answer_' . Str::slug($label, '_'))
                 ->label($label)
                 ->state($value)
-                ->placeholder('—'))
+                ->placeholder('—')
+                ->when($fileKeys->has($label), fn ($entry) => $entry
+                    ->icon('heroicon-o-paper-clip')
+                    ->color('primary')
+                    ->url('/api/v1/membership/registrations/' . rawurlencode($record->reference) . '/files/' . rawurlencode($fileKeys[$label]))
+                    ->openUrlInNewTab()))
             ->values()
             ->all();
 
         return $infolist->schema([
-            Infolists\Components\Section::make('Registration')
+            Infolists\Components\Section::make('Application')
                 ->columns(4)
                 ->schema([
                     Infolists\Components\TextEntry::make('reference')->copyable()->fontFamily('mono'),
@@ -141,6 +156,15 @@ class MembershipRegistrationResource extends Resource
                         ->color(fn ($state) => match ($state) { 'paid' => 'success', 'failed' => 'danger', 'unpaid' => 'warning', default => 'gray' }),
                     Infolists\Components\TextEntry::make('paid_at')->label('Paid on')->dateTime('j M Y, H:i')->placeholder('—'),
                     Infolists\Components\TextEntry::make('payment_reference')->label('Paystack reference')->placeholder('—')->fontFamily('mono'),
+                    Infolists\Components\TextEntry::make('decision_reason')
+                        ->label('Reason given to the applicant')
+                        ->columnSpanFull()
+                        ->visible(fn () => $record->status === 'rejected' && filled($record->decision_reason)),
+                    Infolists\Components\TextEntry::make('memberAccount.member_number')
+                        ->label('Member account')
+                        ->fontFamily('mono')
+                        ->url(fn () => $record->memberAccount && MemberAccountResource::canAccessArea() ? MemberAccountResource::getUrl('edit', ['record' => $record->memberAccount]) : null)
+                        ->visible(fn () => (bool) $record->memberAccount),
                 ]),
             Infolists\Components\Section::make('Answers')
                 ->description($record->form_version !== MembershipForm::current()->version
@@ -172,17 +196,17 @@ class MembershipRegistrationResource extends Resource
             ->visible(fn (MembershipRegistration $record) => $record->status !== 'approved')
             ->requiresConfirmation()
             ->modalDescription(fn (MembershipRegistration $record) => in_array($record->payment_status, ['unpaid', 'failed'], true)
-                ? 'This registration has not been paid yet. Approve it anyway?'
+                ? 'This application has not been paid yet. Approve it anyway?'
                     . (app(MemberAccounts::class)->enabled() ? ' The member account and welcome email follow once it is marked as paid.' : '')
                 : null)
             ->action(function (MembershipRegistration $record) {
                 $record->update(['status' => 'approved', 'reviewed_at' => now()]);
                 $account = $record->memberAccount()->first();
-                Notification::make()->title('Registration approved')
+                Notification::make()->title('Application approved')
                     ->body($account
-                        ? "Member account {$account->member_number} is ready" . ($account->hasPassword() ? '.' : '; a welcome email was sent to set a password.')
+                        ? "Member account {$account->member_number} is ready" . ($account->hasPassword() ? '.' : '; the applicant was emailed a link to set a password.')
                         : (app(MemberAccounts::class)->enabled() && in_array($record->payment_status, ['unpaid', 'failed'], true)
-                            ? 'No member account yet: it is created, and the welcome email sent, once the registration is marked as paid.'
+                            ? 'No member account yet: it is created, and the welcome email sent, once the application is marked as paid.'
                             : null))
                     ->success()->send();
             });
@@ -204,14 +228,35 @@ class MembershipRegistrationResource extends Resource
                 ->icon('heroicon-o-x-mark')
                 ->color('danger')
                 ->visible(fn (MembershipRegistration $record) => $record->status !== 'rejected')
-                ->form([Forms\Components\Textarea::make('reason')->label('Reason (kept in the notes)')])
+                ->modalHeading('Reject this application')
+                ->modalSubmitActionLabel('Reject')
+                ->form(fn (MembershipRegistration $record) => [
+                    Forms\Components\Textarea::make('reason')
+                        ->label('Reason (sent to the applicant)')
+                        ->helperText('Optional. Included in the email, e.g. "The supporting documents were not included."')
+                        ->rows(3),
+                    Forms\Components\Toggle::make('notify')
+                        ->label('Email the applicant')
+                        ->default(filled($record->email) && MembershipEmails::template('rejected')['enabled'])
+                        ->disabled(blank($record->email) || ! MembershipEmails::template('rejected')['enabled'])
+                        ->helperText(blank($record->email)
+                            ? 'This application has no email address.'
+                            : (! MembershipEmails::template('rejected')['enabled'] ? 'The rejection email is switched off under Membership → Emails.' : 'Uses the "Application not accepted" email (Membership → Emails).')),
+                    Forms\Components\Textarea::make('note')
+                        ->label('Internal note (not sent)')
+                        ->rows(2),
+                ])
                 ->action(function (MembershipRegistration $record, array $data) {
                     $record->update([
                         'status' => 'rejected',
                         'reviewed_at' => now(),
-                        'admin_notes' => trim(($record->admin_notes ? $record->admin_notes . "\n" : '') . ($data['reason'] ? 'Rejected: ' . $data['reason'] : '')) ?: null,
+                        'decision_reason' => filled($data['reason'] ?? null) ? trim($data['reason']) : null,
+                        'admin_notes' => trim(($record->admin_notes ? $record->admin_notes . "\n" : '') . (filled($data['note'] ?? null) ? $data['note'] : '')) ?: null,
                     ]);
-                    Notification::make()->title('Registration rejected')->send();
+                    $sent = ($data['notify'] ?? false) && app(MembershipMailer::class)->applicationRejected($record);
+                    Notification::make()->title('Application rejected')
+                        ->body($sent ? "The applicant was emailed at {$record->email}." : 'No email was sent.')
+                        ->send();
                 }),
 
             \Filament\Actions\ActionGroup::make([
@@ -231,7 +276,7 @@ class MembershipRegistrationResource extends Resource
                         Notification::make()->title('Marked as paid')
                             ->body($account && ! $account->hasPassword()
                                 ? "Member account {$account->member_number} is ready; a welcome email was sent to set a password."
-                                : ($record->status !== 'approved' && app(MemberAccounts::class)->enabled() ? 'The member account is created once the registration is approved.' : null))
+                                : ($record->status !== 'approved' && app(MemberAccounts::class)->enabled() ? 'The member account is created once the application is approved.' : null))
                             ->success()->send();
                     }),
 

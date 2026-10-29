@@ -28,7 +28,7 @@ class MembershipSettingsPage extends Page
 
     protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $title = 'Membership settings';
 
@@ -86,15 +86,6 @@ class MembershipSettingsPage extends Page
                                     ? 'None yet. Choose "Members only" under Who can see this page when editing a page (Content → Pages).'
                                     : $pages->implode(', ');
                             }),
-                        Forms\Components\TextInput::make('mail_from_address')
-                            ->label('Send member emails from')
-                            ->email()
-                            ->placeholder(config('mail.from.address'))
-                            ->helperText('Welcome and password emails come from this address. Its domain must be set up with the mail provider, or they may land in spam.'),
-                        Forms\Components\TextInput::make('mail_from_name')
-                            ->label('Sender name')
-                            ->placeholder(fn () => \App\Models\Branding::settings()->site_name)
-                            ->maxLength(100),
                     ]),
 
                 Forms\Components\Section::make('Registrations')

@@ -21,6 +21,8 @@ class MembershipSettings
         'member_number_prefix' => null,
         'mail_from_address' => null,
         'mail_from_name' => null,
+        // Wording of the plugin's emails (MembershipEmails); null = defaults
+        'emails' => null,
     ];
 
     public static function all(): array
@@ -58,9 +60,21 @@ class MembershipSettings
      */
     public static function mailFrom(): ?array
     {
-        $address = self::get('mail_from_address');
+        $address = trim((string) self::get('mail_from_address'));
 
-        return filled($address) ? [$address, self::get('mail_from_name') ?: null] : null;
+        return $address !== '' ? [$address, trim((string) self::get('mail_from_name')) ?: null] : null;
+    }
+
+    /** The site's address for links in emails: the request's when there is one, else the tenant's first domain */
+    public static function siteUrl(): string
+    {
+        if (! app()->runningInConsole() && request()->getHost()) {
+            return request()->getSchemeAndHttpHost();
+        }
+
+        $domain = tenant()?->domains()->orderBy('id')->value('domain');
+
+        return $domain ? 'https://' . $domain : config('app.url');
     }
 
     public static function paystack(): Paystack

@@ -12,7 +12,7 @@ use League\Flysystem\StorageAttributes;
 /**
  * How much file storage each site may use, and how much it is using.
  *
- * Usage is the site's files ({tenant_id}/ on the quota disk) plus its
+ * Usage is the site's files ({tenant_id}/ on the quota disk and on the private disk) plus its
  * database. Files are measured from the disk itself, so every upload path is
  * covered and usage drops as soon as files are deleted.
  */
@@ -34,12 +34,14 @@ class StorageQuota
     {
         $used = 0;
 
-        $files = Storage::disk(config('quota.disk'))->getDriver()->listContents($tenant->id, true);
+        foreach (array_unique(array_filter([config('quota.disk'), config('quota.private_disk')])) as $disk) {
+            $files = Storage::disk($disk)->getDriver()->listContents($tenant->id, true);
 
-        foreach ($files as $file) {
-            /** @var StorageAttributes $file */
-            if ($file->isFile()) {
-                $used += $file->fileSize() ?? 0;
+            foreach ($files as $file) {
+                /** @var StorageAttributes $file */
+                if ($file->isFile()) {
+                    $used += $file->fileSize() ?? 0;
+                }
             }
         }
 

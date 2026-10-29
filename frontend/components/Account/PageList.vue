@@ -1,5 +1,5 @@
 <template>
-  <p v-if="!pages.length" class="text-sm text-gray-600">There are no members-only pages yet.</p>
+  <p v-if="!pages.length" class="text-sm text-gray-600">Nothing here yet. Pages the Association shares with members, such as meeting minutes and reports, will be listed here.</p>
   <ul v-else class="divide-y divide-gray-100">
     <li v-for="page in shown" :key="page.slug">
       <NuxtLink :to="`/${page.slug}`" class="flex items-start justify-between gap-4 py-3 group">

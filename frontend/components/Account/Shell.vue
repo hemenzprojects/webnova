@@ -67,7 +67,7 @@
       </aside>
 
       <main class="flex-1 min-w-0 px-4 py-6 lg:px-8 lg:py-8">
-        <div class="max-w-5xl mx-auto">
+        <div class="max-w-5xl">
           <h1 v-if="title" class="text-2xl md:text-3xl font-bold text-gray-900 mb-6" style="font-family: var(--font-heading)">{{ title }}</h1>
           <slot />
         </div>

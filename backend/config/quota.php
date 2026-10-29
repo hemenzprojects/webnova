@@ -15,6 +15,10 @@ return [
 
     'disk' => 'public',
 
+    // Private files that also count (e.g. membership application documents),
+    // kept under {tenant_id}/ on this disk, which is never served publicly
+    'private_disk' => 'local',
+
     // Count the site's database towards its usage as well as its files
     'include_database' => (bool) env('TENANT_STORAGE_INCLUDE_DATABASE', true),
 

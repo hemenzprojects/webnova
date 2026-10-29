@@ -117,8 +117,15 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/membership/form`, { headers: ssrHeaders() })
   }
 
-  const submitMembership = async (answers: Record<string, any>) => {
-    return await $fetch(`${apiBase}/membership/register`, { method: 'POST', body: { answers }, headers: { Accept: 'application/json' } })
+  // With documents, sent as multipart: the answers as JSON, each file as files[{key}]
+  const submitMembership = async (answers: Record<string, any>, files: Record<string, File> = {}) => {
+    let body: any = { answers }
+    if (Object.keys(files).length) {
+      body = new FormData()
+      body.append('answers', JSON.stringify(answers))
+      for (const [key, file] of Object.entries(files)) body.append(`files[${key}]`, file)
+    }
+    return await $fetch(`${apiBase}/membership/register`, { method: 'POST', body, headers: { Accept: 'application/json' } })
   }
 
   const fetchMembershipStatus = async (reference: string) => {

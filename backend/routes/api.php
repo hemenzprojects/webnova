@@ -121,6 +121,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/register', [MembershipController::class, 'register'])->middleware('throttle:10,1');
         Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
         Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
+        // Application documents: admins only, on the admin session
+        Route::middleware(['web', 'admin.can:membership-registrations,view'])
+            ->get('/registrations/{reference}/files/{key}', [MembershipController::class, 'file']);
         Route::post('/paystack/webhook', [MembershipController::class, 'paystackWebhook']);
 
         // Member portal (Member accounts feature): session sign-in on the "member" guard

@@ -49,8 +49,17 @@ class MembershipController extends Controller
 
     public function register(Request $request): JsonResponse
     {
+        // JSON, or multipart when the form has documents: answers as a JSON string, files as files[{key}]
         $answers = $request->input('answers');
+        if (is_string($answers)) {
+            $answers = json_decode($answers, true);
+        }
         abort_unless(is_array($answers), 422, 'No answers were sent.');
+        foreach ((array) $request->file('files', []) as $key => $file) {
+            if (is_string($key) && $file instanceof \Illuminate\Http\UploadedFile) {
+                $answers[$key] = $file;
+            }
+        }
 
         $result = $this->registrar->submit($answers, $this->siteUrl($request));
         $registration = $result['registration'];
@@ -63,6 +72,23 @@ class MembershipController extends Controller
                 ? 'Your registration has been received, but online payment could not be started. We will contact you about how to pay. Please keep your reference.'
                 : MembershipSettings::get('success_message'),
         ], 201);
+    }
+
+    /**
+     * A document attached to an application, for admins who may view
+     * applications (Membership → Applications). Never public.
+     */
+    public function file(string $reference, string $key)
+    {
+        $registration = MembershipRegistration::where('reference', $reference)->firstOrFail();
+        $answer = ($registration->answers ?? [])[$key] ?? null;
+        $files = app(\App\Plugins\Membership\Support\ApplicationFiles::class);
+
+        abort_unless($files::isFile($answer) && $files->belongsToSite($answer['file']), 404);
+        abort_unless(\Illuminate\Support\Facades\Storage::disk($files::DISK)->exists($answer['file']), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk($files::DISK)
+            ->download($answer['file'], $answer['name'], ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     /**

@@ -58,7 +58,10 @@ class MembershipTypeResource extends Resource
                         ->default('year')
                         ->native(false),
                     Forms\Components\Textarea::make('description')->columnSpanFull(),
-                    Forms\Components\Toggle::make('is_active')->label('Available on the form')->default(true),
+                    Forms\Components\Toggle::make('is_active')
+                        ->label('Offered on the application form')
+                        ->helperText('Off for categories the committee grants, such as Honorary or Fellow: applicants cannot choose them, but admins can give them to members under Members.')
+                        ->default(true),
                     Forms\Components\TextInput::make('order')->numeric()->default(0),
                 ]),
         ]);
@@ -74,7 +77,8 @@ class MembershipTypeResource extends Resource
                 Tables\Columns\TextColumn::make('price')->label('Fee')
                     ->formatStateUsing(fn ($state, MembershipType $record) => MembershipSettings::get('currency') . ' ' . number_format((float) $state, 2) . ' ' . (MembershipType::PERIODS[$record->period] ?? '')),
                 Tables\Columns\TextColumn::make('registrations_count')->counts('registrations')->label('Registrations'),
-                Tables\Columns\IconColumn::make('is_active')->label('On the form')->boolean(),
+                Tables\Columns\IconColumn::make('is_active')->label('On the form')->boolean()
+                    ->tooltip(fn (MembershipType $record) => $record->is_active ? 'Applicants can choose it' : 'Granted by the committee only'),
             ])
             ->actions([Tables\Actions\EditAction::make()]);
     }

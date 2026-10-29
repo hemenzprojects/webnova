@@ -28,6 +28,8 @@ class DeleteTenantData
         }
 
         Storage::disk('public')->deleteDirectory($id);
+        // Private files, e.g. membership application documents
+        Storage::disk('local')->deleteDirectory($id);
         Storage::disk('local')->deleteDirectory("theme-backups/{$id}");
 
         $central = DB::connection(config('tenancy.database.central_connection'));

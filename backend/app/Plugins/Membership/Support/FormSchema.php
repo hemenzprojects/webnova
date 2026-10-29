@@ -36,6 +36,7 @@ class FormSchema
         'checkboxes' => 'Multiple choice (checkboxes)',
         'checkbox' => 'Single checkbox (e.g. "I agree")',
         'country' => 'Country',
+        'file' => 'File upload (e.g. CV, certificate)',
         'membership_type' => 'Membership type (sets the amount)',
     ];
 
@@ -187,6 +188,7 @@ class FormSchema
                 'checkbox' => $required ? ['accepted'] : ['boolean'],
                 'country' => [Rule::in(array_values(config('countries', [])))],
                 'membership_type' => [Rule::exists(MembershipType::class, 'id')->where('is_active', true)],
+                'file' => ['file', 'mimes:' . implode(',', ApplicationFiles::EXTENSIONS), 'max:' . ApplicationFiles::MAX_KB],
                 default => ['string', 'max:255'],
             };
 

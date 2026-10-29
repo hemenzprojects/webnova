@@ -5,7 +5,9 @@ namespace App\Plugins\Membership\Support;
 use App\Plugins\Membership\Models\MembershipForm;
 use App\Plugins\Membership\Models\MembershipRegistration;
 use App\Plugins\Membership\Models\MembershipType;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -35,6 +37,16 @@ class Registrar
 
         $type = $typeId ? MembershipType::find($typeId) : null;
         $clean = FormSchema::clean($schema, $answers, $typeId);
+
+        // Documents (fields of type "file"): stored privately, the answer keeps their details
+        $files = app(ApplicationFiles::class);
+        $uploads = array_filter($clean, fn ($answer) => $answer instanceof UploadedFile);
+        if ($uploads && ($error = $files->quotaError($uploads))) {
+            throw ValidationException::withMessages(['answers.' . array_key_first($uploads) => $error]);
+        }
+        foreach ($uploads as $key => $upload) {
+            $clean[$key] = $files->store($upload);
+        }
         [$name, $email] = FormSchema::nameAndEmail($schema, $clean);
         $amount = (float) ($type?->price ?? 0);
 
@@ -50,6 +62,9 @@ class Registrar
             'status' => 'pending',
             'payment_status' => $amount > 0 ? 'unpaid' : 'not_required',
         ]);
+
+        // Before any approval, so the applicant hears "received" first
+        app(MembershipMailer::class)->applicationReceived($registration);
 
         if ($amount <= 0) {
             $this->autoApprove($registration);

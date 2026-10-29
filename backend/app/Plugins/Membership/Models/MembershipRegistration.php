@@ -24,7 +24,7 @@ class MembershipRegistration extends Model
 
     protected $fillable = [
         'reference', 'membership_type_id', 'name', 'email', 'answers', 'form_snapshot', 'form_version',
-        'amount', 'currency', 'status', 'payment_status', 'payment_reference', 'paid_at', 'reviewed_at',
+        'amount', 'currency', 'status', 'payment_status', 'payment_reference', 'paid_at', 'reviewed_at', 'decision_reason',
         'admin_notes', 'member_id',
     ];
 
@@ -43,11 +43,16 @@ class MembershipRegistration extends Model
             $registration->reference ??= 'MEM-' . now()->format('Y') . '-' . Str::upper(Str::random(6));
         });
 
-        // Approved and nothing owed: the member gets their portal account (Member accounts feature),
-        // however it got there (admin approval, payment confirmation, free membership)
-        static::saved(function (self $registration) {
-            if ($registration->wasRecentlyCreated || $registration->wasChanged(['status', 'payment_status'])) {
-                app(\App\Plugins\Membership\Support\MemberAccounts::class)->syncFromRegistration($registration);
+        // Its documents go with it
+        static::deleted(fn (self $registration) => app(\App\Plugins\Membership\Support\ApplicationFiles::class)->deleteFor($registration));
+
+        // Approval and payment, however they happen (admin, Paystack, free membership): the member
+        // account and the acceptance or welcome email (ApplicationFlow)
+        // (created / updated rather than saved: wasRecentlyCreated stays true for the rest of the request)
+        static::created(fn (self $registration) => app(\App\Plugins\Membership\Support\ApplicationFlow::class)->saved($registration, true));
+        static::updated(function (self $registration) {
+            if ($registration->wasChanged(['status', 'payment_status'])) {
+                app(\App\Plugins\Membership\Support\ApplicationFlow::class)->saved($registration, false);
             }
         });
     }
@@ -83,6 +88,8 @@ class MembershipRegistration extends Model
             $value = $this->answers[$field['key']];
             if ($field['type'] === 'membership_type') {
                 $value = $this->membershipType?->name ?? $value;
+            } elseif (\App\Plugins\Membership\Support\ApplicationFiles::isFile($value)) {
+                $value = $value['name'];
             } elseif (is_bool($value)) {
                 $value = $value ? 'Yes' : 'No';
             } elseif (is_array($value)) {

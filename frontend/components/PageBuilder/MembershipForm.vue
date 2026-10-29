@@ -64,6 +64,19 @@
                 <option v-for="option in field.type === 'country' ? form.countries : field.options" :key="option" :value="option">{{ option }}</option>
               </select>
 
+              <!-- Document (CV, certificate): sent with the form, kept privately -->
+              <div v-else-if="field.type === 'file'">
+                <input
+                  :id="inputId(field)"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  :class="[...inputClass(field), 'file:mr-4 file:px-4 file:py-2 file:border-0 file:rounded file:bg-primary file:text-white file:cursor-pointer']"
+                  :style="inputStyle"
+                  @change="pickFile(field, $event)"
+                />
+                <p class="mt-1 text-xs" :style="{ color: 'var(--color-text-muted)' }">PDF, Word, JPG or PNG, up to 5 MB.</p>
+              </div>
+
               <textarea
                 v-else-if="field.type === 'textarea'"
                 :id="inputId(field)"
@@ -242,6 +255,20 @@ const inputClass = (field: Field) => [
 const formatMoney = (amount: number) =>
   new Intl.NumberFormat('en', { style: 'currency', currency: form.value?.currency || 'GHS', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount)
 
+// Documents: checked here for size so applicants need not wait for the upload to hear it is too big
+const MAX_FILE_BYTES = 5 * 1024 * 1024
+const pickFile = (field: Field, event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0] || null
+  delete errors[field.key]
+  if (file && file.size > MAX_FILE_BYTES) {
+    errors[field.key] = 'This file is larger than 5 MB.'
+    ;(event.target as HTMLInputElement).value = ''
+    answers[field.key] = ''
+    return
+  }
+  answers[field.key] = file || ''
+}
+
 const submit = async () => {
   for (const key of Object.keys(errors)) delete errors[key]
   formError.value = ''
@@ -249,10 +276,14 @@ const submit = async () => {
 
   // Only send what applies to the chosen membership type
   const payload: Record<string, any> = {}
-  for (const field of allFields.value.filter(applies)) payload[field.key] = answers[field.key]
+  const files: Record<string, File> = {}
+  for (const field of allFields.value.filter(applies)) {
+    if (answers[field.key] instanceof File) files[field.key] = answers[field.key]
+    else payload[field.key] = answers[field.key]
+  }
 
   try {
-    const result: any = await submitMembership(payload)
+    const result: any = await submitMembership(payload, files)
     if (result.payment_url) {
       window.location.href = result.payment_url
       return

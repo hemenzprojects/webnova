@@ -262,7 +262,7 @@ Optional feature modules that each site's admin activates under Customize → Pl
 
 ## Scheduler
 
-`deploy/fly/docker/supervisord.conf` runs `php artisan schedule:work`; scheduled jobs are in `routes/console.php` (e.g. membership data retention). Site Health does not depend on it.
+`deploy/fly/docker/supervisord.conf` runs `php artisan schedule:work` and `php artisan queue:work` (both as `www-data`, like php-fpm, so files they write in `storage/` stay writable by the site); scheduled jobs are in `routes/console.php` (membership data retention, Stanbic payment checks). `fly.toml` keeps one machine always running (`auto_stop_machines = 'off'`, `min_machines_running = 1`): a stopped machine runs no scheduler. Site Health does not depend on it.
 
 ## Tenancy Bootstrapper Notes
 

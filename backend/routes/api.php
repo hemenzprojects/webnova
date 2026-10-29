@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\HeaderController;
 use App\Http\Controllers\Api\ThemeController;
 use App\Plugins\ComingSoon\Http\ComingSoonController;
 use App\Plugins\Donations\Http\DonationController;
+use App\Plugins\Membership\Http\AdminFileController;
 use App\Plugins\Membership\Http\MemberAccountController;
 use App\Plugins\Membership\Http\MembershipController;
 use App\Plugins\PluginManager;
@@ -118,9 +119,21 @@ Route::prefix('v1')->group(function () {
     // Membership plugin
     Route::prefix('membership')->middleware('plugin:membership')->group(function () {
         Route::get('/form', [MembershipController::class, 'form']);
+        Route::get('/privacy', [MembershipController::class, 'privacy']);
         Route::post('/register', [MembershipController::class, 'register'])->middleware('throttle:10,1');
         Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
         Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
+        // The receipt PDF of an application's payment (from the page Paystack returns to)
+        Route::get('/registrations/{reference}/receipt', [MembershipController::class, 'receiptPdf'])->middleware('throttle:30,1');
+        // Receipt PDFs for admins, on the admin session
+        Route::middleware(['web', 'admin.can:membership-registrations,view'])
+            ->get('/admin/payments/{id}/receipt', [AdminFileController::class, 'receipt'])->whereNumber('id');
+        // Members' documents and member resources: admins only, on the admin session
+        Route::middleware(['web', 'plugin:membership,accounts'])->prefix('admin')->group(function () {
+            Route::middleware(['plugin:membership,documents', 'admin.can:member-accounts,view'])->get('/member-documents/{id}', [AdminFileController::class, 'memberDocument'])->whereNumber('id');
+            Route::middleware('admin.can:member-resources,view')->get('/member-resources/{id}', [AdminFileController::class, 'memberResource'])->whereNumber('id');
+        });
+
         // Application documents: admins only, on the admin session
         Route::middleware(['web', 'admin.can:membership-registrations,view'])
             ->get('/registrations/{reference}/files/{key}', [MembershipController::class, 'file']);
@@ -135,6 +148,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/reset-password', [MemberAccountController::class, 'resetPassword'])->middleware('throttle:10,1');
             Route::post('/password', [MemberAccountController::class, 'changePassword'])->middleware('throttle:10,1');
             Route::get('/pages', [MemberAccountController::class, 'pages']);
+            Route::post('/consent', [MemberAccountController::class, 'consent']);
+            Route::get('/profile', [MemberAccountController::class, 'profile']);
+            Route::put('/profile', [MemberAccountController::class, 'updateProfile'])->middleware('throttle:30,1');
+            Route::middleware('plugin:membership,documents')->group(function () {
+                Route::get('/documents', [MemberAccountController::class, 'documents']);
+                Route::post('/documents', [MemberAccountController::class, 'uploadDocument'])->middleware('throttle:20,1');
+                Route::get('/documents/{id}/download', [MemberAccountController::class, 'downloadDocument'])->whereNumber('id');
+                Route::delete('/documents/{id}', [MemberAccountController::class, 'deleteDocument'])->whereNumber('id');
+            });
+            Route::get('/payments', [MemberAccountController::class, 'payments']);
+            Route::get('/payments/{number}', [MemberAccountController::class, 'receipt']);
+            Route::get('/payments/{number}/pdf', [MemberAccountController::class, 'receiptPdf'])->middleware('throttle:30,1');
+            Route::get('/resources', [MemberAccountController::class, 'resources']);
+            Route::get('/resources/{id}/download', [MemberAccountController::class, 'downloadResource'])->whereNumber('id');
         });
     });
 

@@ -31,7 +31,7 @@ class MembershipEmailsPage extends Page
 
     protected static ?string $navigationLabel = 'Emails';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $title = 'Membership emails';
 

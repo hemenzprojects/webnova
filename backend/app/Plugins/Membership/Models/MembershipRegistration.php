@@ -25,7 +25,7 @@ class MembershipRegistration extends Model
     protected $fillable = [
         'reference', 'membership_type_id', 'name', 'email', 'answers', 'form_snapshot', 'form_version',
         'amount', 'currency', 'status', 'payment_status', 'payment_reference', 'paid_at', 'reviewed_at', 'decision_reason',
-        'admin_notes', 'member_id',
+        'consented_at', 'consent_version', 'admin_notes', 'member_id',
     ];
 
     protected $casts = [
@@ -34,6 +34,7 @@ class MembershipRegistration extends Model
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'consented_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -41,6 +42,17 @@ class MembershipRegistration extends Model
         static::creating(function (self $registration) {
             // e.g. MEM-2026-7KQ2XW: readable on receipts, not guessable
             $registration->reference ??= 'MEM-' . now()->format('Y') . '-' . Str::upper(Str::random(6));
+        });
+
+        // Without review (Membership settings), paying makes an applicant a member: approved in the
+        // same save as the payment, however it is recorded (Paystack, "Mark as paid", a free membership)
+        static::saving(function (self $registration) {
+            if ($registration->status === 'pending'
+                && in_array($registration->payment_status, ['paid', 'not_required'], true)
+                && ! \App\Plugins\Membership\Support\MembershipSettings::get('require_approval')) {
+                $registration->status = 'approved';
+                $registration->reviewed_at ??= now();
+            }
         });
 
         // Its documents go with it
@@ -55,6 +67,11 @@ class MembershipRegistration extends Model
                 app(\App\Plugins\Membership\Support\ApplicationFlow::class)->saved($registration, false);
             }
         });
+    }
+
+    public function payment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MembershipPayment::class);
     }
 
     public function memberAccount(): \Illuminate\Database\Eloquent\Relations\HasOne

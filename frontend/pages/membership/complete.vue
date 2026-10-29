@@ -23,7 +23,50 @@
             <template v-else>We have not received your payment yet. If you have just paid, it can take a moment: check again shortly.</template>
           </p>
 
-          <dl class="text-sm mb-8 space-y-1" :style="{ color: 'var(--color-text-muted)' }">
+          <!-- Paid: the receipt, with the new Member ID -->
+          <div v-if="receipt" class="text-left bg-white border border-gray-200 rounded-lg p-5 mb-6 text-sm">
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div v-if="receipt.member_id" class="col-span-2">
+                <dt class="text-xs uppercase tracking-wider text-gray-500">Your Member ID</dt>
+                <dd class="font-mono text-2xl font-semibold text-gray-900">{{ receipt.member_id }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-500">Receipt number</dt>
+                <dd class="font-mono text-gray-900">{{ receipt.receipt_number }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-500">Amount paid</dt>
+                <dd class="text-gray-900">{{ receipt.currency }} {{ receipt.amount.toFixed(2) }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-500">Membership</dt>
+                <dd class="text-gray-900">{{ receipt.membership_type || '—' }}, {{ receipt.year }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-500">Date paid</dt>
+                <dd class="text-gray-900">{{ formatDate(receipt.paid_at) }}</dd>
+              </div>
+            </dl>
+            <p class="mt-4 text-gray-600">We have emailed this receipt (PDF) to {{ receipt.email }}<template v-if="receipt.member_id">, with a link to set your password for the member portal</template>.</p>
+          </div>
+          <div v-if="receipt" class="flex flex-wrap justify-center gap-3">
+            <NuxtLink
+              :to="`/membership/receipt?reference=${encodeURIComponent(registration.reference)}`"
+              class="px-5 py-2.5 text-white bg-primary"
+              :style="{ borderRadius: 'var(--radius-button, 8px)' }"
+            >
+              View or print receipt
+            </NuxtLink>
+            <a
+              :href="`/api/v1/membership/registrations/${encodeURIComponent(registration.reference)}/receipt`"
+              class="px-5 py-2.5 border"
+              :style="{ borderRadius: 'var(--radius-button, 8px)', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }"
+            >
+              Download receipt (PDF)
+            </a>
+          </div>
+
+          <dl v-else class="text-sm mb-8 space-y-1" :style="{ color: 'var(--color-text-muted)' }">
             <div>Reference: <strong class="font-mono" :style="{ color: 'var(--color-text)' }">{{ registration.reference }}</strong></div>
             <div v-if="registration.membership_type">Membership: {{ registration.membership_type }}</div>
             <div v-if="registration.amount > 0">Amount: {{ registration.currency }} {{ registration.amount.toFixed(2) }}</div>
@@ -73,6 +116,7 @@ const { data: registration, pending, refresh } = await useAsyncData(
   }
 )
 
+const receipt = computed(() => registration.value?.receipt ?? null)
 const isPaid = computed(() => ['paid', 'not_required'].includes(registration.value?.payment_status))
 const heading = computed(() => (isPaid.value ? 'Thank you!' : registration.value?.payment_status === 'failed' ? 'Payment not completed' : 'Waiting for payment'))
 

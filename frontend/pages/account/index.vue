@@ -30,6 +30,13 @@
             <dt class="text-xs text-gray-500">Member since</dt>
             <dd class="text-gray-900">{{ formatDate(member?.member_since) }}</dd>
           </div>
+          <div>
+            <dt class="text-xs text-gray-500">Membership {{ member?.current_year }}</dt>
+            <dd :class="paidThisYear ? 'text-green-700' : 'text-amber-700'" class="font-medium">
+              {{ paidThisYear ? 'Paid' : 'Not paid yet' }}
+              <NuxtLink to="/account/payments" class="ml-1 text-sm font-normal text-primary hover:underline">Payments</NuxtLink>
+            </dd>
+          </div>
         </dl>
         <NuxtLink to="/account/membership" class="inline-block mt-6 text-sm font-medium text-primary hover:underline">See membership details &rarr;</NuxtLink>
       </section>
@@ -38,6 +45,9 @@
       <section class="bg-white rounded-xl border border-gray-200 p-6">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">Quick links</h2>
         <ul class="space-y-3 text-sm">
+          <li><NuxtLink to="/account/profile" class="text-primary hover:underline">Update my profile</NuxtLink></li>
+          <li><NuxtLink to="/account/payments" class="text-primary hover:underline">My payments and receipts</NuxtLink></li>
+          <li v-if="member?.features?.documents"><NuxtLink to="/account/documents" class="text-primary hover:underline">My documents</NuxtLink></li>
           <li><NuxtLink to="/account/pages" class="text-primary hover:underline">Members' area</NuxtLink></li>
           <li><NuxtLink to="/account/password" class="text-primary hover:underline">Change password</NuxtLink></li>
           <li><NuxtLink to="/" class="text-primary hover:underline">Visit the website</NuxtLink></li>
@@ -62,4 +72,5 @@ const { member } = useMember()
 const { fetchMemberPages } = useApi()
 const { data } = await useAsyncData('member-pages', () => fetchMemberPages().catch(() => ({ pages: [] })))
 const pages = computed(() => data.value?.pages || [])
+const paidThisYear = computed(() => !!member.value?.paid_year && member.value.paid_year >= member.value.current_year)
 </script>

@@ -123,6 +123,11 @@
           </div>
         </div>
 
+        <!-- Privacy notice (Membership settings): applying means agreeing to it -->
+        <div v-if="form.privacy_notice" class="mb-8">
+          <AccountConsentCheckbox v-model="consent" :error="errors.consent" />
+        </div>
+
         <!-- Amount for the chosen membership type -->
         <div
           v-if="form.show_amount && selectedType"
@@ -189,6 +194,7 @@ interface MembershipFormData {
   online_payment: boolean
   types: { id: number; name: string; price: number; period_suffix: string }[]
   countries: string[]
+  privacy_notice?: boolean
 }
 
 const props = defineProps<{
@@ -213,6 +219,7 @@ const errors = reactive<Record<string, string>>({})
 const formError = ref('')
 const submitting = ref(false)
 const done = ref<{ message: string; reference: string } | null>(null)
+const consent = ref(false)
 
 const allFields = computed<Field[]>(() => (form.value?.sections || []).flatMap((s) => s.fields))
 const typeField = computed(() => allFields.value.find((f) => f.type === 'membership_type'))
@@ -272,6 +279,10 @@ const pickFile = (field: Field, event: Event) => {
 const submit = async () => {
   for (const key of Object.keys(errors)) delete errors[key]
   formError.value = ''
+  if (form.value?.privacy_notice && !consent.value) {
+    errors.consent = 'Please confirm that you have read and agree to the privacy notice.'
+    return
+  }
   submitting.value = true
 
   // Only send what applies to the chosen membership type
@@ -283,7 +294,7 @@ const submit = async () => {
   }
 
   try {
-    const result: any = await submitMembership(payload, files)
+    const result: any = await submitMembership(payload, files, consent.value)
     if (result.payment_url) {
       window.location.href = result.payment_url
       return
@@ -293,7 +304,7 @@ const submit = async () => {
     const fieldErrors = error?.data?.errors
     if (error?.status === 422 && fieldErrors) {
       for (const [key, messages] of Object.entries(fieldErrors)) {
-        errors[key.replace(/^answers\./, '')] = (messages as string[])[0]
+        errors[key.replace(/^answers\./, '')] = (messages as string[])[0]!
       }
       formError.value = 'Please check the highlighted fields.'
       // Bring the first problem into view

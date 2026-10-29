@@ -43,7 +43,7 @@ export const useMember = () => {
     signedIn((await api.memberLogin(email, password, remember)).member)
   }
 
-  const setPassword = async (data: { token: string; email: string; password: string; password_confirmation: string }) => {
+  const setPassword = async (data: { token: string; email: string; password: string; password_confirmation: string; consent?: boolean }) => {
     await ensureXsrf()
     signedIn((await api.memberSetPassword(data)).member)
   }
@@ -58,6 +58,18 @@ export const useMember = () => {
     return (await api.memberChangePassword(data)).message
   }
 
+  // Agree to the site's current privacy notice
+  const consent = async () => {
+    await ensureXsrf()
+    member.value = (await api.memberConsent()).member
+  }
+
+  // Changes on the member's own data (profile, documents) need the XSRF cookie first
+  const withXsrf = async <T>(call: () => Promise<T>): Promise<T> => {
+    await ensureXsrf()
+    return await call()
+  }
+
   const logout = async () => {
     await ensureXsrf()
     await api.memberLogout().catch(() => null)
@@ -65,7 +77,7 @@ export const useMember = () => {
     clearNuxtData((key) => key.startsWith('page-') || key.startsWith('member-'))
   }
 
-  return { member, enabled, loaded, load, login, logout, setPassword, forgotPassword, changePassword }
+  return { member, enabled, loaded, load, login, logout, setPassword, forgotPassword, changePassword, consent, withXsrf }
 }
 
 /** The first validation message of a failed request, for showing under a form */

@@ -21,12 +21,21 @@ class MembershipEmails
     public const KINDS = [
         'received' => [
             'label' => 'Application received',
-            'description' => 'Sent to the applicant when they submit the registration form.',
+            'description' => 'Sent to the applicant when they submit the registration form. Only while applications are reviewed (Membership → Settings): otherwise paying makes them a member and the receipt is their first email.',
             'optional' => true,
             'feature' => null,
             'placeholders' => ['name', 'reference', 'membership_type', 'amount', 'site_name'],
             'subject' => 'We have received your application',
             'body' => "# Thank you for applying\n\nDear {name},\n\nWe have received your application for {membership_type} membership of {site_name}. Your reference is **{reference}**.\n\nWe will review your application and let you know the outcome by email.\n\nKind regards,  \n{site_name}",
+        ],
+        'receipt' => [
+            'label' => 'Payment receipt',
+            'description' => 'Sent when a membership fee is paid, online or marked as paid by an admin. It is the member\'s proof of payment, with the receipt number and their Member ID.',
+            'optional' => true,
+            'feature' => null,
+            'placeholders' => ['name', 'receipt_number', 'member_id', 'membership_type', 'amount', 'year', 'site_name', 'receipt_details'],
+            'subject' => 'Your {site_name} payment receipt {receipt_number}',
+            'body' => "# Thank you for your payment\n\nDear {name},\n\nWe have received your payment of {amount} for your {site_name} membership for {year}. Your receipt is attached as a PDF: please keep it as proof of payment.\n\n{receipt_details}\n\nKind regards,  \n{site_name}",
         ],
         'approved' => [
             'label' => 'Application accepted',
@@ -72,11 +81,14 @@ class MembershipEmails
         'reference' => 'The application reference, e.g. MEM-2026-7KQ2XW',
         'membership_type' => 'The membership category, e.g. Ordinary',
         'amount' => 'The fee, e.g. USD 100.00',
-        'member_id' => 'The Member ID, e.g. APBA-2026-0042',
+        'member_id' => 'The Member ID, e.g. APBA0042',
         'email' => "The member's sign-in email",
         'reason' => 'The reason the reviewer gave (left out if none)',
         'site_name' => 'Your site name (Branding)',
         'member_details' => 'A box with the Member ID, category and sign-in email',
+        'receipt_details' => 'A box with the receipt: receipt number, Member ID, amount, date and payment reference',
+        'receipt_number' => 'The receipt number, e.g. RCT-2026-0042',
+        'year' => 'The membership year paid for, e.g. 2026',
         'button' => "The email's button (e.g. Set your password)",
     ];
 

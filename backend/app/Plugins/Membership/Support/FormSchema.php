@@ -188,7 +188,7 @@ class FormSchema
                 'checkbox' => $required ? ['accepted'] : ['boolean'],
                 'country' => [Rule::in(array_values(config('countries', [])))],
                 'membership_type' => [Rule::exists(MembershipType::class, 'id')->where('is_active', true)],
-                'file' => ['file', 'mimes:' . implode(',', ApplicationFiles::EXTENSIONS), 'max:' . ApplicationFiles::MAX_KB],
+                'file' => PrivateFiles::rules(),
                 default => ['string', 'max:255'],
             };
 

@@ -44,6 +44,20 @@ class MembershipController extends Controller
                     'period_suffix' => MembershipType::PERIOD_SUFFIX[$type->period] ?? '',
                 ]),
             'countries' => array_values(config('countries', [])),
+            // Applicants tick "I agree to the privacy notice" while the site has one
+            'privacy_notice' => MembershipSettings::privacyVersion() > 0,
+        ]);
+    }
+
+    /** The site's privacy notice for applicants and members (Membership settings), as HTML */
+    public function privacy(): JsonResponse
+    {
+        $notice = MembershipSettings::get('privacy_notice');
+        abort_if(blank($notice), 404);
+
+        return response()->json([
+            'html' => (string) \Illuminate\Support\Str::markdown($notice, ['html_input' => 'strip', 'allow_unsafe_links' => false]),
+            'version' => MembershipSettings::privacyVersion(),
         ]);
     }
 
@@ -61,7 +75,7 @@ class MembershipController extends Controller
             }
         }
 
-        $result = $this->registrar->submit($answers, $this->siteUrl($request));
+        $result = $this->registrar->submit($answers, $this->siteUrl($request), $request->boolean('consent'));
         $registration = $result['registration'];
 
         return response()->json([
@@ -82,13 +96,9 @@ class MembershipController extends Controller
     {
         $registration = MembershipRegistration::where('reference', $reference)->firstOrFail();
         $answer = ($registration->answers ?? [])[$key] ?? null;
-        $files = app(\App\Plugins\Membership\Support\ApplicationFiles::class);
+        abort_unless(\App\Plugins\Membership\Support\ApplicationFiles::isFile($answer), 404);
 
-        abort_unless($files::isFile($answer) && $files->belongsToSite($answer['file']), 404);
-        abort_unless(\Illuminate\Support\Facades\Storage::disk($files::DISK)->exists($answer['file']), 404);
-
-        return \Illuminate\Support\Facades\Storage::disk($files::DISK)
-            ->download($answer['file'], $answer['name'], ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
+        return \App\Plugins\Membership\Support\PrivateFiles::download($answer['file'], $answer['name']);
     }
 
     /**
@@ -113,7 +123,17 @@ class MembershipController extends Controller
             'payment_status' => $registration->payment_status,
             'status' => $registration->status,
             'message' => MembershipSettings::get('success_message'),
-        ]);
+            'receipt' => $registration->payment?->toReceiptArray(),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    /** The receipt PDF of an application's payment; 404 until it is paid */
+    public function receiptPdf(string $reference, \App\Plugins\Membership\Support\ReceiptPdf $pdf)
+    {
+        $registration = MembershipRegistration::where('reference', $reference)->firstOrFail();
+        abort_unless($registration->payment, 404);
+
+        return $pdf->download($registration->payment);
     }
 
     /**

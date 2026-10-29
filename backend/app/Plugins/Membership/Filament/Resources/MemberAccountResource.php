@@ -5,8 +5,10 @@ namespace App\Plugins\Membership\Filament\Resources;
 use App\Admin\Concerns\InFunctionalArea;
 use App\Plugins\Membership\Filament\Resources\MemberAccountResource\Pages;
 use App\Plugins\Membership\Models\MemberAccount;
+use App\Plugins\Membership\Models\MemberProfile;
 use App\Plugins\Membership\Models\MembershipType;
 use App\Plugins\Membership\Support\MemberAccounts;
+use App\Plugins\Membership\Support\MembershipSettings;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -45,7 +47,7 @@ class MemberAccountResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make()
+            Forms\Components\Section::make('Account')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('name')
@@ -84,6 +86,27 @@ class MemberAccountResource extends Resource
                         ->dehydrated(false)
                         ->visibleOn('create')
                         ->columnSpanFull(),
+                ]),
+            // Kept up to date by the member in the portal (My profile); admins can correct it
+            Forms\Components\Section::make('Profile')
+                ->description('The member keeps this up to date in the member portal (My profile).')
+                ->relationship('profile')
+                ->columns(3)
+                ->collapsible()
+                ->hiddenOn('create')
+                ->schema([
+                    Forms\Components\Select::make('title')->options(array_combine(MemberProfile::TITLES, MemberProfile::TITLES))->native(false),
+                    Forms\Components\TextInput::make('phone')->tel()->maxLength(30),
+                    Forms\Components\Select::make('country')->options(fn () => array_combine(config('countries', []), config('countries', [])))->searchable(),
+                    Forms\Components\TextInput::make('city')->maxLength(100),
+                    Forms\Components\TextInput::make('institution')->maxLength(200),
+                    Forms\Components\Select::make('institution_type')->label('Type of institution')->options(MemberProfile::INSTITUTION_TYPES)->native(false),
+                    Forms\Components\TextInput::make('position')->maxLength(150),
+                    Forms\Components\TextInput::make('orcid')->label('ORCID iD')->maxLength(40),
+                    Forms\Components\TextInput::make('website')->url()->maxLength(255),
+                    Forms\Components\Select::make('crops')->multiple()->options(fn () => array_combine(MembershipSettings::cropOptions(), MembershipSettings::cropOptions()))->columnSpan(3),
+                    Forms\Components\Select::make('expertise')->label('Areas of expertise')->multiple()->options(fn () => array_combine(MembershipSettings::expertiseOptions(), MembershipSettings::expertiseOptions()))->columnSpan(3),
+                    Forms\Components\Textarea::make('bio')->label('About')->rows(3)->columnSpan(3),
                 ]),
         ]);
     }
@@ -180,6 +203,16 @@ class MemberAccountResource extends Resource
                         ? Notification::make()->title('Email sent to ' . $record->email)->success()->send()
                         : Notification::make()->title('The email could not be sent')->body('Check the mail settings, then try again.')->danger()->send();
                 }),
+        ];
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            MemberAccountResource\RelationManagers\PaymentsRelationManager::class,
+            ...(app(\App\Plugins\PluginManager::class)->featureIsActive('membership', \App\Plugins\Membership\MembershipPlugin::FEATURE_DOCUMENTS)
+                ? [MemberAccountResource\RelationManagers\DocumentsRelationManager::class]
+                : []),
         ];
     }
 

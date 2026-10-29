@@ -1,7 +1,7 @@
 <template>
   <AccountAuthCard title="Member login" subtitle="Sign in to the member portal.">
     <form novalidate @submit.prevent="submit">
-      <AccountField v-model="email" label="Email" type="email" autocomplete="email" required />
+      <AccountField v-model="email" label="Email or Member ID" type="text" autocomplete="username" required />
       <AccountField v-model="password" label="Password" type="password" autocomplete="current-password" required />
       <div class="flex items-center justify-between mb-6 text-sm">
         <label class="inline-flex items-center gap-2 text-gray-700">
@@ -34,7 +34,7 @@ const error = ref('')
 const submit = async () => {
   error.value = ''
   if (!email.value || !password.value) {
-    error.value = 'Enter your email and password.'
+    error.value = 'Enter your email or Member ID, and your password.'
     return
   }
   busy.value = true

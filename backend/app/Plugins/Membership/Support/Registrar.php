@@ -25,10 +25,16 @@ class Registrar
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function submit(array $answers, string $siteUrl): array
+    public function submit(array $answers, string $siteUrl, bool $consent = false): array
     {
         $form = MembershipForm::current();
         $schema = $form->schema;
+
+        // With a privacy notice (Membership settings), applying means agreeing to it
+        $privacyVersion = MembershipSettings::privacyVersion();
+        if ($privacyVersion && ! $consent) {
+            throw ValidationException::withMessages(['consent' => 'Please confirm that you have read and agree to the privacy notice.']);
+        }
 
         $typeField = FormSchema::membershipTypeField($schema);
         $typeId = $typeField && is_numeric($answers[$typeField['key']] ?? null) ? (int) $answers[$typeField['key']] : null;
@@ -37,6 +43,8 @@ class Registrar
 
         $type = $typeId ? MembershipType::find($typeId) : null;
         $clean = FormSchema::clean($schema, $answers, $typeId);
+
+        $this->refuseExistingMember($schema, $clean);
 
         // Documents (fields of type "file"): stored privately, the answer keeps their details
         $files = app(ApplicationFiles::class);
@@ -61,13 +69,14 @@ class Registrar
             'currency' => MembershipSettings::get('currency'),
             'status' => 'pending',
             'payment_status' => $amount > 0 ? 'unpaid' : 'not_required',
+            'consented_at' => $privacyVersion ? now() : null,
+            'consent_version' => $privacyVersion ?: null,
         ]);
 
-        // Before any approval, so the applicant hears "received" first
-        app(MembershipMailer::class)->applicationReceived($registration);
-
-        if ($amount <= 0) {
-            $this->autoApprove($registration);
+        // "Received, we will review it" only when applications are reviewed; otherwise the
+        // receipt (on payment) or the acceptance (free membership) is the applicant's first email
+        if (MembershipSettings::get('require_approval')) {
+            app(MembershipMailer::class)->applicationReceived($registration);
         }
 
         $this->notifyAdmin($registration);
@@ -139,7 +148,6 @@ class Registrar
 
         if ($paidInFull) {
             $registration->update(['payment_status' => 'paid', 'paid_at' => now(), 'payment_reference' => $paymentReference]);
-            $this->autoApprove($registration);
         } elseif ($paymentReference === $registration->payment_reference && in_array($result['status'], ['failed', 'abandoned', 'reversed'], true)) {
             $registration->update(['payment_status' => 'failed']);
         }
@@ -166,13 +174,36 @@ class Registrar
     }
 
     /**
-     * Without manual review, a registration is approved once nothing is owed.
+     * Someone who is already a member renews from the member portal, not by
+     * applying again (which would give them a second Member ID).
+     *
+     * @throws ValidationException
      */
-    private function autoApprove(MembershipRegistration $registration): void
+    private function refuseExistingMember(array $schema, array $answers): void
     {
-        if (! MembershipSettings::get('require_approval') && $registration->status === 'pending') {
-            $registration->update(['status' => 'approved', 'reviewed_at' => now()]);
+        $emailField = FormSchema::fieldByRole($schema, 'email') ?? collect(FormSchema::fields($schema))->firstWhere('type', 'email');
+        $email = strtolower(trim((string) ($emailField ? ($answers[$emailField['key']] ?? '') : '')));
+        if ($email === '') {
+            return;
         }
+
+        $account = \App\Plugins\Membership\Models\MemberAccount::where('email', $email)->first();
+        if ($account) {
+            $message = app(MemberAccounts::class)->enabled()
+                ? "This email already belongs to a member ({$account->member_number}). Please log in to the member portal to renew your membership or update your details."
+                : "This email already belongs to a member ({$account->member_number}). If you need help, please contact us.";
+        } else {
+            $earlier = MembershipRegistration::whereRaw('lower(email) = ?', [$email])
+                ->where('status', 'approved')
+                ->latest()
+                ->first();
+            if (! $earlier) {
+                return;
+            }
+            $message = "This email is already registered (reference {$earlier->reference}). If you need help, please contact us.";
+        }
+
+        throw ValidationException::withMessages(['answers.' . $emailField['key'] => $message]);
     }
 
     private function notifyAdmin(MembershipRegistration $registration): void

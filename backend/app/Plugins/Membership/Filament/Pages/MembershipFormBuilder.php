@@ -31,7 +31,7 @@ class MembershipFormBuilder extends Page
 
     protected static ?string $navigationLabel = 'Registration form';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $title = 'Registration form';
 

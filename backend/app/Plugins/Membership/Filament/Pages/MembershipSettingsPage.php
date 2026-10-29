@@ -28,7 +28,7 @@ class MembershipSettingsPage extends Page
 
     protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 8;
 
     protected static ?string $title = 'Membership settings';
 
@@ -74,9 +74,24 @@ class MembershipSettingsPage extends Page
                         Forms\Components\TextInput::make('member_number_prefix')
                             ->label('Member ID prefix')
                             ->placeholder(MembershipSettings::memberNumberPrefix())
-                            ->helperText(fn (Get $get) => 'Member IDs look like ' . MembershipSettings::memberNumberPrefix() . '-' . now()->format('Y') . '-0001. Changing it only affects new members.')
+                            ->helperText('Letters and numbers only. Changing it only affects new members.')
                             ->regex('/^[A-Za-z0-9]{1,12}$/')
-                            ->maxLength(12),
+                            ->maxLength(12)
+                            ->live(onBlur: true),
+                        Forms\Components\Select::make('member_number_format')
+                            ->label('Member ID format')
+                            ->options(MembershipSettings::MEMBER_ID_FORMATS)
+                            ->required()
+                            ->native(false)
+                            ->live()
+                            ->helperText(function (Get $get) {
+                                $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $get('member_number_prefix'))) ?: MembershipSettings::memberNumberPrefix();
+
+                                return 'The next new member gets an ID like ' . ($get('member_number_format') === 'running'
+                                    ? sprintf('%s%04d', $prefix, 1)
+                                    : sprintf('%s-%s-%04d', $prefix, now()->format('Y'), 1))
+                                    . ', continuing after the highest existing one (including imported members).';
+                            }),
                         Forms\Components\Placeholder::make('members_only_pages')
                             ->label('Members-only pages')
                             ->content(function () {
@@ -88,7 +103,45 @@ class MembershipSettingsPage extends Page
                             }),
                     ]),
 
-                Forms\Components\Section::make('Registrations')
+                Forms\Components\Section::make('Privacy and data')
+                    ->description('Data protection: applicants agree to this notice on the application form, and members when they first sign in. Say what you collect, why, who sees it and how long you keep it.')
+                    ->schema([
+                        Forms\Components\MarkdownEditor::make('privacy_notice')
+                            ->label('Privacy notice')
+                            ->toolbarButtons(['bold', 'italic', 'link', 'heading', 'bulletList', 'orderedList', 'undo', 'redo'])
+                            ->helperText(fn () => MembershipSettings::privacyVersion()
+                                ? 'Version ' . MembershipSettings::privacyVersion() . '. Shown at /membership/privacy. Leave empty for no consent step.'
+                                : 'Empty: applicants and members are not asked to agree to anything.'),
+                        Forms\Components\Toggle::make('privacy_ask_again')
+                            ->label('Ask everyone to agree again')
+                            ->helperText('For real changes to how data is used. Leave off for small corrections such as typos.')
+                            ->default(false)
+                            ->dehydrated()
+                            ->visible(fn () => MembershipSettings::privacyVersion() > 0),
+                        Forms\Components\TextInput::make('retention_months')
+                            ->label('Delete rejected and never-paid applications after')
+                            ->numeric()->minValue(0)->maxValue(120)
+                            ->suffix('months')
+                            ->helperText('With their documents. Applications of members are kept. 0 keeps them all.'),
+                    ]),
+
+                Forms\Components\Section::make('Member profiles')
+                    ->description('The choices members tick on their profile (My profile). One per line. Renaming one removes it from profiles that had it.')
+                    ->visible(fn (Get $get) => in_array(MembershipPlugin::FEATURE_ACCOUNTS, $get('features') ?? [], true))
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\Textarea::make('profile_crops')
+                            ->label('Crops')
+                            ->rows(12)
+                            ->placeholder(implode("\n", MembershipSettings::DEFAULT_CROPS)),
+                        Forms\Components\Textarea::make('profile_expertise')
+                            ->label('Areas of expertise')
+                            ->rows(12)
+                            ->placeholder(implode("\n", MembershipSettings::DEFAULT_EXPERTISE)),
+                    ]),
+
+                                Forms\Components\Section::make('Registrations')
                     ->columns(2)
                     ->schema([
                         Forms\Components\Toggle::make('require_approval')
@@ -173,6 +226,16 @@ class MembershipSettingsPage extends Page
 
         $wanted = $data['features'] ?? [];
         unset($data['features']);
+
+        // A new notice, or "ask again": everyone agrees to the new version
+        $askAgain = (bool) ($data['privacy_ask_again'] ?? false);
+        unset($data['privacy_ask_again']);
+        $oldNotice = trim((string) MembershipSettings::get('privacy_notice'));
+        $newNotice = trim((string) ($data['privacy_notice'] ?? ''));
+        $data['privacy_notice'] = $newNotice !== '' ? $newNotice : null;
+        if ($newNotice !== '' && ($oldNotice === '' || ($askAgain && $newNotice !== $oldNotice))) {
+            $data['privacy_version'] = max(1, (int) MembershipSettings::get('privacy_version')) + ($oldNotice === '' && ! MembershipSettings::get('privacy_version') ? 0 : 1);
+        }
         $on = app(PluginManager::class)->setFeatures('membership', $wanted);
 
         MembershipSettings::save($data);

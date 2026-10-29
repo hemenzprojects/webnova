@@ -1,10 +1,10 @@
 <template>
-  <AccountAuthCard title="Forgot your password?" subtitle="Enter the email you use for your membership and we will send you a link to choose a new password.">
+  <AccountAuthCard title="Forgot your password?" subtitle="Enter your email or Member ID and we will email you a link to choose a new password.">
     <div v-if="sent" class="rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm p-4">
       {{ sent }}
     </div>
     <form v-else novalidate @submit.prevent="submit">
-      <AccountField v-model="email" label="Email" type="email" autocomplete="email" required />
+      <AccountField v-model="email" label="Email or Member ID" type="text" autocomplete="username" required />
       <p v-if="error" class="mb-4 text-sm text-red-600" role="alert">{{ error }}</p>
       <AccountSubmitButton label="Send me a link" :busy="busy" />
     </form>
@@ -27,7 +27,7 @@ const sent = ref('')
 const submit = async () => {
   error.value = ''
   if (!email.value) {
-    error.value = 'Enter your email.'
+    error.value = 'Enter your email or Member ID.'
     return
   }
   busy.value = true

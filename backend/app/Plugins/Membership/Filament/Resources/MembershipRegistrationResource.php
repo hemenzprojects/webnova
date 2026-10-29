@@ -156,6 +156,10 @@ class MembershipRegistrationResource extends Resource
                         ->color(fn ($state) => match ($state) { 'paid' => 'success', 'failed' => 'danger', 'unpaid' => 'warning', default => 'gray' }),
                     Infolists\Components\TextEntry::make('paid_at')->label('Paid on')->dateTime('j M Y, H:i')->placeholder('—'),
                     Infolists\Components\TextEntry::make('payment_reference')->label('Paystack reference')->placeholder('—')->fontFamily('mono'),
+                    Infolists\Components\TextEntry::make('payment.receipt_number')->label('Receipt number')->fontFamily('mono')
+                        ->url(fn () => $record->payment ? url("/api/v1/membership/admin/payments/{$record->payment->id}/receipt") : null)
+                        ->helperText('Click to download the receipt PDF.')
+                        ->visible(fn () => (bool) $record->payment),
                     Infolists\Components\TextEntry::make('decision_reason')
                         ->label('Reason given to the applicant')
                         ->columnSpanFull()

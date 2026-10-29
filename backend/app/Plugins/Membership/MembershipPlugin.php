@@ -40,6 +40,8 @@ class MembershipPlugin extends Plugin
 
     public const FEATURE_ACCOUNTS = 'accounts';
 
+    public const FEATURE_DOCUMENTS = 'documents';
+
     public function features(): array
     {
         return [
@@ -47,6 +49,11 @@ class MembershipPlugin extends Plugin
                 'label' => 'Member accounts and members-only pages',
                 'description' => 'Approved, paid members get a login and a member portal on the website (/account), and pages can be made visible to members only.',
                 'requires' => [],
+            ],
+            self::FEATURE_DOCUMENTS => [
+                'label' => 'Member documents',
+                'description' => 'Members upload documents (CV, certificates, licences) to their portal under My documents, and admins see them on the member\'s page. For organisations that check qualifications.',
+                'requires' => [self::FEATURE_ACCOUNTS],
             ],
         ];
     }

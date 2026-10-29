@@ -8,6 +8,75 @@ export interface Member {
   status_label: string
   is_active: boolean
   member_since: string | null
+  /** Latest membership year paid for (membership runs by calendar year) */
+  paid_year: number | null
+  current_year: number
+  needs_consent: boolean
+  /** Optional parts of the portal the site has switched on */
+  features: { documents: boolean }
+}
+
+export interface MemberProfile {
+  title: string | null
+  phone: string | null
+  country: string | null
+  city: string | null
+  institution: string | null
+  institution_type: string | null
+  position: string | null
+  crops: string[]
+  expertise: string[]
+  bio: string | null
+  orcid: string | null
+  website: string | null
+}
+
+export interface MemberProfileOptions {
+  titles: string[]
+  institution_types: Record<string, string>
+  crops: string[]
+  expertise: string[]
+  countries: string[]
+}
+
+export interface MemberDocument {
+  id: number
+  category: string
+  category_label: string
+  title: string
+  name: string
+  size: number
+  source: 'member' | 'application' | 'admin'
+  source_label: string
+  can_delete: boolean
+  uploaded_at: string | null
+}
+
+/** A membership payment's receipt */
+export interface MembershipReceipt {
+  receipt_number: string
+  member_id: string | null
+  name: string | null
+  email: string | null
+  membership_type: string | null
+  purpose: string
+  year: number
+  amount: number
+  currency: string
+  method: string
+  reference: string | null
+  paid_at: string | null
+  application_reference: string | null
+}
+
+export interface MemberResourceFile {
+  id: number
+  title: string
+  description: string | null
+  category: string | null
+  name: string
+  size: number
+  updated_at: string | null
 }
 
 export const useApi = () => {
@@ -118,11 +187,12 @@ export const useApi = () => {
   }
 
   // With documents, sent as multipart: the answers as JSON, each file as files[{key}]
-  const submitMembership = async (answers: Record<string, any>, files: Record<string, File> = {}) => {
-    let body: any = { answers }
+  const submitMembership = async (answers: Record<string, any>, files: Record<string, File> = {}, consent = false) => {
+    let body: any = { answers, consent }
     if (Object.keys(files).length) {
       body = new FormData()
       body.append('answers', JSON.stringify(answers))
+      body.append('consent', consent ? '1' : '0')
       for (const [key, file] of Object.entries(files)) body.append(`files[${key}]`, file)
     }
     return await $fetch(`${apiBase}/membership/register`, { method: 'POST', body, headers: { Accept: 'application/json' } })
@@ -138,7 +208,7 @@ export const useApi = () => {
 
   // Membership plugin, member portal (Member accounts feature). Runs on the visitor's session:
   // cookies are forwarded during SSR, and changes send the XSRF token (utils/xsrf.ts).
-  const memberRequest = async <T = any>(path: string, method: 'GET' | 'POST' = 'GET', body?: Record<string, any>): Promise<T> => {
+  const memberRequest = async <T = any>(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', body?: Record<string, any> | FormData): Promise<T> => {
     return await $fetch<T>(`${apiBase}/membership/account${path}`, {
       method,
       body,
@@ -152,11 +222,32 @@ export const useApi = () => {
     memberRequest<{ member: Member }>('/login', 'POST', { email, password, remember })
   const memberLogout = () => memberRequest<{ member: null }>('/logout', 'POST')
   const memberForgotPassword = (email: string) => memberRequest<{ message: string }>('/forgot-password', 'POST', { email })
-  const memberSetPassword = (data: { token: string; email: string; password: string; password_confirmation: string }) =>
+  const memberSetPassword = (data: { token: string; email: string; password: string; password_confirmation: string; consent?: boolean }) =>
     memberRequest<{ member: Member }>('/reset-password', 'POST', data)
   const memberChangePassword = (data: { current_password: string; password: string; password_confirmation: string }) =>
     memberRequest<{ message: string }>('/password', 'POST', data)
   const fetchMemberPages = () => memberRequest<{ pages: { title: string; slug: string; excerpt: string | null }[] }>('/pages')
+  const memberConsent = () => memberRequest<{ member: Member }>('/consent', 'POST')
+  const fetchMemberProfile = () => memberRequest<{ profile: MemberProfile; options: MemberProfileOptions }>('/profile')
+  const saveMemberProfile = (profile: MemberProfile) => memberRequest<{ profile: MemberProfile; message: string }>('/profile', 'PUT', profile)
+  const fetchMemberDocuments = () =>
+    memberRequest<{ documents: MemberDocument[]; categories: Record<string, string>; max: number; hint: string }>('/documents')
+  const uploadMemberDocument = (file: File, title: string, category: string) => {
+    const body = new FormData()
+    body.append('file', file)
+    body.append('title', title)
+    body.append('category', category)
+    return memberRequest<{ document: MemberDocument; message: string }>('/documents', 'POST', body)
+  }
+  const deleteMemberDocument = (id: number) => memberRequest<{ message: string }>(`/documents/${id}`, 'DELETE')
+  const fetchMemberResources = () => memberRequest<{ resources: MemberResourceFile[] }>('/resources')
+  const fetchMemberPayments = () => memberRequest<{ payments: MembershipReceipt[] }>('/payments')
+  const fetchMemberReceipt = (number: string) => memberRequest<{ receipt: MembershipReceipt }>(`/payments/${encodeURIComponent(number)}`)
+
+  // The site's privacy notice (Membership plugin); 404 when it has none
+  const fetchPrivacyNotice = async () => {
+    return await $fetch<{ html: string; version: number }>(`${apiBase}/membership/privacy`, { headers: ssrHeaders() })
+  }
 
   // Donations plugin
   const fetchDonationForm = async () => {
@@ -237,6 +328,16 @@ export const useApi = () => {
     memberSetPassword,
     memberChangePassword,
     fetchMemberPages,
+    memberConsent,
+    fetchMemberProfile,
+    saveMemberProfile,
+    fetchMemberDocuments,
+    uploadMemberDocument,
+    deleteMemberDocument,
+    fetchMemberResources,
+    fetchMemberPayments,
+    fetchMemberReceipt,
+    fetchPrivacyNotice,
     fetchDonationForm,
     submitDonation,
     fetchDonationStatus,

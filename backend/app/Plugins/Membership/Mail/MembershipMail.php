@@ -7,6 +7,7 @@ use App\Plugins\Membership\Support\MembershipEmails;
 use App\Plugins\Membership\Support\MembershipSettings;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -25,6 +26,7 @@ class MembershipMail extends Mailable
      * @param  array<string, ?string>  $values  placeholder values, e.g. ['name' => 'Ama Mensah']
      * @param  array{url: string, label: string}|null  $button
      * @param  array<string, ?string>|null  $details  rows of the {member_details} box, label => value
+     * @param  array<int, array{data: string, name: string, mime: string}>  $files  attachments, e.g. the receipt PDF
      */
     public function __construct(
         public string $kind,
@@ -32,6 +34,7 @@ class MembershipMail extends Mailable
         public ?array $button = null,
         public ?array $details = null,
         ?array $template = null,
+        public array $files = [],
     ) {
         $this->siteName = trim((string) Branding::settings()->site_name) ?: (string) tenant()?->getTenantKey();
         $this->values['site_name'] ??= $this->siteName;
@@ -48,6 +51,11 @@ class MembershipMail extends Mailable
         );
     }
 
+    public function attachments(): array
+    {
+        return array_map(fn ($file) => Attachment::fromData(fn () => $file['data'], $file['name'])->withMime($file['mime']), $this->files);
+    }
+
     public function content(): Content
     {
         return new Content(markdown: 'mail.membership.message', with: [
@@ -60,7 +68,7 @@ class MembershipMail extends Mailable
     }
 
     /**
-     * The message split into Markdown text and the {member_details} / {button}
+     * The message split into Markdown text and the {member_details} (or {receipt_details}) / {button}
      * blocks, which the view draws as mail components.
      *
      * @return array<int, array{type: string, text?: string}>
@@ -74,12 +82,12 @@ class MembershipMail extends Mailable
         }
 
         $parts = [];
-        foreach (preg_split('/(\{member_details\}|\{button\})/', $body, -1, PREG_SPLIT_DELIM_CAPTURE) as $piece) {
+        foreach (preg_split('/(\{member_details\}|\{receipt_details\}|\{button\})/', $body, -1, PREG_SPLIT_DELIM_CAPTURE) as $piece) {
             if ($piece === '{button}') {
                 if ($this->button) {
                     $parts[] = ['type' => 'button'];
                 }
-            } elseif ($piece === '{member_details}') {
+            } elseif ($piece === '{member_details}' || $piece === '{receipt_details}') {
                 if (array_filter($this->details ?? [], 'filled')) {
                     $parts[] = ['type' => 'details'];
                 }

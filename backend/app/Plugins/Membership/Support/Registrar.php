@@ -98,22 +98,23 @@ class Registrar
     }
 
     /**
-     * Send the applicant to Paystack. Null when Paystack is not set up: the
-     * registration stays "unpaid" and the admin collects payment another way.
+     * Send the applicant to the site's payment provider (Paystack or Stanbic).
+     * Null when none is set up: the registration stays "unpaid" and the admin
+     * collects payment another way.
      */
     public function startPayment(MembershipRegistration $registration, string $siteUrl): ?string
     {
-        $paystack = MembershipSettings::paystack();
-        if (! $paystack->isConfigured() || ! $registration->email || $registration->payment_status === 'paid') {
+        $gateway = MembershipSettings::gateway();
+        if (! $gateway->isConfigured() || ! $registration->email || $registration->payment_status === 'paid') {
             return null;
         }
 
         // A fresh reference per attempt, so a failed payment can be retried
         $attempt = $registration->payment_reference ? ((int) substr(strrchr($registration->payment_reference, '-'), 1)) + 1 : 1;
         $reference = "{$registration->reference}-{$attempt}";
-        $registration->update(['payment_reference' => $reference]);
+        $registration->update(['payment_reference' => $reference, 'payment_provider' => $gateway->key(), 'gateway_order_id' => null]);
 
-        return $paystack->initialize(
+        $payment = $gateway->start(
             $registration->email,
             (float) $registration->amount,
             $registration->currency,
@@ -121,10 +122,18 @@ class Registrar
             rtrim($siteUrl, '/') . '/membership/complete?reference=' . urlencode($registration->reference),
             ['registration' => $registration->reference, 'membership_type' => $registration->membershipType?->name],
         );
+        if ($payment['order_id']) {
+            $registration->update([
+                'gateway_order_id' => $payment['order_id'],
+                'gateway_orders' => array_merge($registration->gateway_orders ?? [], [$reference => $payment['order_id']]),
+            ]);
+        }
+
+        return $payment['url'];
     }
 
     /**
-     * Ask Paystack about a payment attempt and record the result. Checks the
+     * Ask the payment provider about a payment attempt and record the result. Checks the
      * latest attempt unless told which one: an earlier attempt can still
      * succeed after the applicant has started another.
      */
@@ -137,7 +146,11 @@ class Registrar
             return $registration;
         }
 
-        $result = MembershipSettings::paystack()->verify($paymentReference);
+        // Checked with the provider the attempt was sent to; N-Genius looks payments up by its own order id
+        $gateway = MembershipSettings::gateway($registration->payment_provider ?: 'paystack');
+        $orderId = ($registration->gateway_orders ?? [])[$paymentReference]
+            ?? ($paymentReference === $registration->payment_reference ? $registration->gateway_order_id : null);
+        $result = $gateway->check($paymentReference, $orderId);
         if (! $result) {
             return $registration;
         }
@@ -148,7 +161,7 @@ class Registrar
 
         if ($paidInFull) {
             $registration->update(['payment_status' => 'paid', 'paid_at' => now(), 'payment_reference' => $paymentReference]);
-        } elseif ($paymentReference === $registration->payment_reference && in_array($result['status'], ['failed', 'abandoned', 'reversed'], true)) {
+        } elseif ($paymentReference === $registration->payment_reference && $result['status'] === 'failed') {
             $registration->update(['payment_status' => 'failed']);
         }
 

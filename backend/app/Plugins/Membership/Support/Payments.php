@@ -36,9 +36,12 @@ class Payments
                 'year' => (int) $paidAt->format('Y'),
                 'amount' => $registration->amount,
                 'currency' => $registration->currency,
-                // Paystack attempts are "{application reference}-{n}"; anything else was recorded by an admin
-                'method' => $registration->payment_reference && str_starts_with($registration->payment_reference, $registration->reference . '-') ? 'paystack' : 'other',
+                // Online attempts are "{application reference}-{n}"; anything else was recorded by an admin
+                'method' => $registration->payment_reference && str_starts_with($registration->payment_reference, $registration->reference . '-')
+                    ? ($registration->payment_provider ?: 'paystack')
+                    : 'other',
                 'reference' => $registration->payment_reference,
+                'gateway_reference' => ($registration->gateway_orders ?? [])[$registration->payment_reference] ?? $registration->gateway_order_id,
                 'name' => $registration->name,
                 'email' => $registration->email,
                 'paid_at' => $paidAt,

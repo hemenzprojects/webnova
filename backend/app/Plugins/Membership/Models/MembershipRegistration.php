@@ -24,12 +24,13 @@ class MembershipRegistration extends Model
 
     protected $fillable = [
         'reference', 'membership_type_id', 'name', 'email', 'answers', 'form_snapshot', 'form_version',
-        'amount', 'currency', 'status', 'payment_status', 'payment_reference', 'paid_at', 'reviewed_at', 'decision_reason',
+        'amount', 'currency', 'status', 'payment_status', 'payment_reference', 'payment_provider', 'gateway_order_id', 'gateway_orders', 'paid_at', 'reviewed_at', 'decision_reason',
         'consented_at', 'consent_version', 'admin_notes', 'member_id',
     ];
 
     protected $casts = [
         'answers' => 'array',
+        'gateway_orders' => 'array',
         'form_snapshot' => 'array',
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',

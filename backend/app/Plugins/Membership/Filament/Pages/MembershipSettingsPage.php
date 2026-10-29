@@ -43,6 +43,7 @@ class MembershipSettingsPage extends Page
         $settings = MembershipSettings::all();
         // Never send the secret key back to the browser
         $settings['paystack_secret_key'] = null;
+        $settings['ngenius_api_key'] = null;
         $settings['features'] = app(PluginManager::class)->enabledFeatures('membership');
         $this->form->fill($settings);
     }
@@ -51,6 +52,7 @@ class MembershipSettingsPage extends Page
     {
         $webhookUrl = request()->getSchemeAndHttpHost() . '/api/v1/membership/paystack/webhook';
         $hasSecret = filled(MembershipSettings::get('paystack_secret_key'));
+        $hasNgeniusKey = filled(MembershipSettings::get('ngenius_api_key'));
 
         $features = app(PluginManager::class)->get('membership')->features();
 
@@ -163,7 +165,68 @@ class MembershipSettingsPage extends Page
                             ->columnSpanFull(),
                     ]),
 
+                Forms\Components\Section::make('Online payments')
+                    ->description('Who takes card payments for membership fees. Payments already started are still checked with the provider they were made with.')
+                    ->schema([
+                        Forms\Components\Radio::make('payment_provider')
+                            ->hiddenLabel()
+                            ->options(MembershipSettings::PAYMENT_PROVIDERS)
+                            ->default('paystack')
+                            ->required()
+                            ->live(),
+                    ]),
+
+                Forms\Components\Section::make('Stanbic Bank card payments')
+                    ->visible(fn (Get $get) => $get('payment_provider') === 'stanbic')
+                    ->description(new HtmlString(
+                        'Applicants pay by card on Stanbic\'s secure payment page (N-Genius). Stanbic\'s merchant acquiring team gives you the outlet reference, the API key and the realm name, '
+                        . 'first for the sandbox (test payments), then for live. Stanbic sets up the outlet for one currency (usually GHS): the membership currency above must match it.'
+                    ))
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('ngenius_outlet')
+                            ->label('Outlet reference')
+                            ->placeholder('e.g. 1a2b3c4d-0000-…')
+                            ->regex('/^[0-9a-fA-F-]{20,60}$/')
+                            ->requiredIf('payment_provider', 'stanbic'),
+                        Forms\Components\TextInput::make('ngenius_api_key')
+                            ->label('API key')
+                            ->password()
+                            ->revealable()
+                            ->placeholder($hasNgeniusKey ? 'Saved. Leave empty to keep it.' : 'The long key from Stanbic')
+                            ->regex('/^[A-Za-z0-9+\/=]{20,300}$/')
+                            ->required(fn (Get $get) => $get('payment_provider') === 'stanbic' && ! $hasNgeniusKey),
+                        Forms\Components\TextInput::make('ngenius_realm')
+                            ->label('Realm name')
+                            ->placeholder(\App\Plugins\Membership\Support\Gateways\NGenius::DEFAULT_REALM)
+                            ->maxLength(100),
+                        Forms\Components\TextInput::make('ngenius_api_url')
+                            ->label('API address')
+                            ->url()
+                            ->rule(fn () => function (string $attribute, $value, \Closure $fail) {
+                                if (filled($value) && ! \App\Plugins\Membership\Support\Gateways\NGenius::validApiUrl($value)) {
+                                    $fail('Enter the https address Stanbic gave you, e.g. https://api-gateway.stanbicbank.com.gh');
+                                }
+                            })
+                            ->placeholder(\App\Plugins\Membership\Support\Gateways\NGenius::SANDBOX_URL)
+                            ->helperText('Empty = Stanbic\'s sandbox (test payments only). For live payments, enter the live API address Stanbic gives you.'),
+                        Forms\Components\Placeholder::make('ngenius_status')
+                            ->hiddenLabel()
+                            ->content(function () {
+                                $gateway = MembershipSettings::gateway('stanbic');
+                                if (! $gateway->isConfigured()) {
+                                    return 'Online payment is off until the outlet reference and API key are saved; registrations are recorded as unpaid.';
+                                }
+
+                                return $gateway->isSandbox()
+                                    ? '✓ Saved, using the SANDBOX: payments are tests and no money is taken. Use "Test the Stanbic connection" to check the details.'
+                                    : '✓ Saved, using the LIVE address: real payments.';
+                            })
+                            ->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make('Paystack payments')
+                    ->visible(fn (Get $get) => $get('payment_provider') !== 'stanbic')
                     ->description(new HtmlString(
                         'Applicants pay by card or mobile money after submitting. Copy your keys from the Paystack dashboard (Settings → API Keys &amp; Webhooks). '
                         . 'Use the test keys first, then switch to the live keys.<br>Set the <strong>Webhook URL</strong> in Paystack to: <code>' . e($webhookUrl) . '</code>'
@@ -199,10 +262,22 @@ class MembershipSettingsPage extends Page
 
         return [
             Action::make('save')->label('Save changes')->submit('save'),
+            Action::make('testStanbic')
+                ->label('Test the Stanbic connection')
+                ->color('gray')
+                ->visible(fn () => MembershipSettings::get('payment_provider') === 'stanbic' && MembershipSettings::gateway('stanbic')->isConfigured())
+                ->action(function () {
+                    try {
+                        MembershipSettings::gateway('stanbic')->testConnection();
+                        Notification::make()->title('Connected to Stanbic')->body('The outlet, API key and realm were accepted. Save first if you changed them.')->success()->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->title('Stanbic refused the connection')->body($e->getMessage())->danger()->persistent()->send();
+                    }
+                }),
             Action::make('removeKeys')
                 ->label('Remove Paystack keys')
                 ->color('gray')
-                ->visible(fn () => filled(MembershipSettings::get('paystack_secret_key')))
+                ->visible(fn () => filled(MembershipSettings::get('paystack_secret_key')) && MembershipSettings::get('payment_provider') !== 'stanbic')
                 ->requiresConfirmation()
                 ->modalDescription('Online payment stops until new keys are saved.')
                 ->action(function () {
@@ -222,6 +297,14 @@ class MembershipSettingsPage extends Page
         // An empty secret field means "keep the saved key"
         if (blank($data['paystack_secret_key'] ?? null)) {
             unset($data['paystack_secret_key']);
+        }
+        if (blank($data['ngenius_api_key'] ?? null)) {
+            unset($data['ngenius_api_key']);
+        }
+        foreach (['ngenius_outlet', 'ngenius_api_key', 'ngenius_realm', 'ngenius_api_url'] as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = trim((string) $data[$field]) ?: null;
+            }
         }
 
         $wanted = $data['features'] ?? [];

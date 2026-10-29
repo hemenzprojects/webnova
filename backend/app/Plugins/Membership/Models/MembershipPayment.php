@@ -18,6 +18,7 @@ class MembershipPayment extends Model
 
     public const METHODS = [
         'paystack' => 'Online (Paystack)',
+        'stanbic' => 'Online card payment (Stanbic Bank)',
         'bank' => 'Bank transfer',
         'cash' => 'Cash',
         'other' => 'Other',
@@ -25,7 +26,7 @@ class MembershipPayment extends Model
 
     protected $fillable = [
         'receipt_number', 'member_account_id', 'membership_registration_id', 'membership_type_id', 'purpose', 'year',
-        'amount', 'currency', 'method', 'reference', 'name', 'email', 'paid_at', 'emailed_at',
+        'amount', 'currency', 'method', 'reference', 'gateway_reference', 'name', 'email', 'paid_at', 'emailed_at',
     ];
 
     protected $casts = [

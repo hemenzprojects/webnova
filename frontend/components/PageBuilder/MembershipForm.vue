@@ -163,7 +163,7 @@
           </button>
         </div>
         <p v-if="selectedType && selectedType.price > 0 && form.online_payment" class="mt-4 text-center text-xs" :style="{ color: 'var(--color-text-muted)' }">
-          You will be taken to Paystack to pay securely by card or mobile money.
+          {{ form?.payment_provider === 'stanbic' ? 'You will be taken to Stanbic Bank\'s secure page to pay by card.' : 'You will be taken to Paystack to pay securely by card or mobile money.' }}
         </p>
       </form>
     </div>

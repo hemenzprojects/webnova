@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-// The receipt of an application's payment, opened from the page Paystack returns to
+// The receipt of an application's payment, opened from the page the payment provider returns to
 definePageMeta({ portal: true })
 
 const route = useRoute()

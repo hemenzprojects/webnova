@@ -155,7 +155,7 @@ class MembershipRegistrationResource extends Resource
                         ->formatStateUsing(fn ($state) => MembershipRegistration::PAYMENT_STATUSES[$state] ?? $state)
                         ->color(fn ($state) => match ($state) { 'paid' => 'success', 'failed' => 'danger', 'unpaid' => 'warning', default => 'gray' }),
                     Infolists\Components\TextEntry::make('paid_at')->label('Paid on')->dateTime('j M Y, H:i')->placeholder('—'),
-                    Infolists\Components\TextEntry::make('payment_reference')->label('Paystack reference')->placeholder('—')->fontFamily('mono'),
+                    Infolists\Components\TextEntry::make('payment_reference')->label('Payment reference')->placeholder('—')->fontFamily('mono'),
                     Infolists\Components\TextEntry::make('payment.receipt_number')->label('Receipt number')->fontFamily('mono')
                         ->url(fn () => $record->payment ? url("/api/v1/membership/admin/payments/{$record->payment->id}/receipt") : null)
                         ->helperText('Click to download the receipt PDF.')
@@ -286,14 +286,14 @@ class MembershipRegistrationResource extends Resource
 
                 \Filament\Actions\Action::make('checkPayment')
                     ->authorize(fn () => static::canManage())
-                    ->label('Check payment with Paystack')
+                    ->label('Check payment online')
                     ->icon('heroicon-o-arrow-path')
-                    ->visible(fn (MembershipRegistration $record) => $record->payment_reference && $record->payment_status !== 'paid')
+                    ->visible(fn (MembershipRegistration $record) => $record->payment_reference && str_starts_with($record->payment_reference, $record->reference . '-') && $record->payment_status !== 'paid')
                     ->action(function (MembershipRegistration $record) {
                         try {
                             $record = app(Registrar::class)->confirmPayment($record);
                         } catch (Throwable $e) {
-                            Notification::make()->title('Paystack could not be checked')->body($e->getMessage())->danger()->send();
+                            Notification::make()->title('The payment could not be checked')->body($e->getMessage())->danger()->send();
 
                             return;
                         }

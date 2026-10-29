@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-// Paystack returns applicants here after paying (Membership plugin)
+// The payment provider (Paystack or Stanbic) returns applicants here after paying (Membership plugin)
 const route = useRoute()
 const reference = computed(() => String(route.query.reference || ''))
 const { fetchMembershipStatus, retryMembershipPayment } = useApi()

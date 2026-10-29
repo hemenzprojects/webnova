@@ -33,7 +33,8 @@ class MembershipController extends Controller
             'submit_text' => $schema['submit_text'] ?? 'Submit',
             'show_amount' => $schema['show_amount'] ?? true,
             'currency' => MembershipSettings::get('currency'),
-            'online_payment' => MembershipSettings::paystack()->isConfigured(),
+            'online_payment' => MembershipSettings::gateway()->isConfigured(),
+            'payment_provider' => MembershipSettings::gateway()->key(),
             'types' => MembershipType::where('is_active', true)->orderBy('order')->orderBy('name')->get()
                 ->map(fn (MembershipType $type) => [
                     'id' => $type->id,

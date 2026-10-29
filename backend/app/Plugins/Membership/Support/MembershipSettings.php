@@ -15,8 +15,14 @@ class MembershipSettings
         'require_approval' => true,
         'notification_email' => null,
         'success_message' => 'Thank you! Your registration has been received. We will be in touch by email.',
+        // Online payments: "paystack" or "stanbic" (Stanbic Bank card payments, N-Genius)
+        'payment_provider' => 'paystack',
         'paystack_public_key' => null,
         'paystack_secret_key' => null,
+        'ngenius_api_url' => null,
+        'ngenius_outlet' => null,
+        'ngenius_api_key' => null,
+        'ngenius_realm' => null,
         // Member accounts feature
         'member_number_prefix' => null,
         // How Member IDs are numbered: MEMBER_ID_FORMATS
@@ -149,5 +155,23 @@ class MembershipSettings
     public static function paystack(): Paystack
     {
         return new Paystack(self::get('paystack_secret_key'));
+    }
+
+    public const PAYMENT_PROVIDERS = [
+        'paystack' => 'Paystack (card and mobile money)',
+        'stanbic' => 'Stanbic Bank card payments (N-Genius)',
+    ];
+
+    /**
+     * The online payment provider: the site's choice, or the one a payment was
+     * started with (checked with that provider even after the site switches).
+     */
+    public static function gateway(?string $provider = null): Gateways\PaymentGateway
+    {
+        $provider ??= self::get('payment_provider');
+
+        return $provider === 'stanbic'
+            ? new Gateways\NGenius(self::get('ngenius_api_url'), self::get('ngenius_outlet'), self::get('ngenius_api_key'), self::get('ngenius_realm'))
+            : new Gateways\PaystackGateway(self::paystack());
     }
 }

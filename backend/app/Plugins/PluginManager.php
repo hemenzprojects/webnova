@@ -19,6 +19,9 @@ class PluginManager
     /** @var array<string, bool> active state per tenant id, for this request */
     private array $activeCache = [];
 
+    /** @var array<string, string[]> switched-on features per tenant id and plugin, for this request */
+    private array $featureCache = [];
+
     /**
      * @return array<string, Plugin> every installed plugin, keyed by key()
      */
@@ -103,6 +106,88 @@ class PluginManager
         $this->get($key)?->deactivated();
     }
 
+    /**
+     * A part of an active plugin that this site has switched on (Plugin::features()).
+     * Always false while the plugin itself is off.
+     */
+    public function featureIsActive(string $key, string $feature): bool
+    {
+        return in_array($feature, $this->activeFeatures($key), true);
+    }
+
+    /**
+     * @return string[] features of the plugin switched on for this site; empty while the plugin is off
+     */
+    public function activeFeatures(string $key): array
+    {
+        $plugin = $this->get($key);
+        if (! $plugin || ! $this->isActive($key)) {
+            return [];
+        }
+
+        $tenant = tenant();
+
+        return array_values(array_filter(
+            $this->enabledFeatures($key),
+            fn ($feature) => $plugin->isFeatureAvailableFor($tenant, $feature)
+        ));
+    }
+
+    /**
+     * Features the site's admin has switched on, whether or not the plugin is active now.
+     *
+     * @return string[]
+     */
+    public function enabledFeatures(string $key): array
+    {
+        $tenant = tenant();
+        if (! $tenant) {
+            return [];
+        }
+
+        $cacheKey = $tenant->getTenantKey() . ':' . $key;
+        if (! array_key_exists($cacheKey, $this->featureCache)) {
+            $this->featureCache[$cacheKey] = Schema::hasTable('tenant_plugins')
+                ? (TenantPlugin::where('key', $key)->first()?->features ?? [])
+                : [];
+        }
+
+        return $this->featureCache[$cacheKey];
+    }
+
+    /**
+     * Switch on exactly these features, plus whatever they require.
+     *
+     * @param  string[]  $features
+     * @return string[] the features now on
+     */
+    public function setFeatures(string $key, array $features): array
+    {
+        $plugin = $this->get($key);
+        $defined = $plugin?->features() ?? [];
+
+        $on = [];
+        $add = function (string $feature) use (&$add, &$on, $defined, $plugin) {
+            if (in_array($feature, $on, true) || ! isset($defined[$feature]) || ! $plugin->isFeatureAvailableFor(tenant(), $feature)) {
+                return;
+            }
+            $on[] = $feature;
+            foreach ($defined[$feature]['requires'] ?? [] as $required) {
+                $add($required);
+            }
+        };
+        foreach ($features as $feature) {
+            $add($feature);
+        }
+
+        // In the order the plugin lists them
+        $on = array_values(array_intersect(array_keys($defined), $on));
+        TenantPlugin::updateOrCreate(['key' => $key], ['features' => $on]);
+        $this->forget();
+
+        return $on;
+    }
+
     /** Plugin-specific settings stored with the tenant's activation row */
     public function settings(string $key): array
     {
@@ -117,5 +202,6 @@ class PluginManager
     private function forget(): void
     {
         $this->activeCache = [];
+        $this->featureCache = [];
     }
 }

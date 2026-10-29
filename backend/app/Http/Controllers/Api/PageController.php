@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Service;
 use App\Models\Member;
 use App\Models\TeamMember;
+use App\Plugins\Membership\Support\MemberAccounts;
 use Illuminate\Http\Request;
 
 class PageController extends Controller
@@ -16,6 +17,7 @@ class PageController extends Controller
     public function index()
     {
         $pages = Page::where('is_published', true)
+            ->where('visibility', '!=', Page::VISIBILITY_MEMBERS)
             ->orderBy('order')
             ->select('id', 'title', 'slug', 'excerpt', 'featured_image', 'order')
             ->get();
@@ -29,12 +31,50 @@ class PageController extends Controller
             ->where('is_published', true)
             ->firstOrFail();
 
+        if ($page->isMembersOnly()) {
+            if ($restricted = $this->restriction($page)) {
+                return $restricted;
+            }
+        }
+
         // Transform blocks if using page builder
         if ($page->usesBuilder()) {
             $page->blocks = $this->transformBlocks($page->blocks);
         }
 
-        return response()->json($page);
+        $response = response()->json($page);
+
+        // Never kept by a shared cache: the next visitor may not be a member
+        return $page->isMembersOnly() ? $response->header('Cache-Control', 'private, no-store') : $response;
+    }
+
+    /**
+     * Null when the visitor may see a members-only page: an active member
+     * signed in to the member portal, or a signed-in admin. Otherwise a 403
+     * saying why, which the website turns into its "members only" screen.
+     * While the Member accounts feature is off, only admins see these pages:
+     * switching the feature off never makes them public.
+     */
+    protected function restriction(Page $page)
+    {
+        $admin = auth()->guard('web')->user();
+        if ($admin && $admin->role_id !== null) {
+            return null;
+        }
+
+        $portal = app(MemberAccounts::class)->enabled();
+        $member = $portal ? auth()->guard('member')->user() : null;
+        if ($member?->isActive()) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'This page is for members only.',
+            'restricted' => true,
+            // login: not signed in · inactive: signed in, membership not active · unavailable: no member portal
+            'reason' => ! $portal ? 'unavailable' : ($member ? 'inactive' : 'login'),
+            'title' => $page->title,
+        ], 403)->header('Cache-Control', 'no-store');
     }
 
     /**

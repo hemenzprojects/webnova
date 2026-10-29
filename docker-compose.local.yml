@@ -13,6 +13,7 @@
 # Then access:
 #   Central admin → http://platform.local:8080/admin
 #   Tenant        → http://cda.local:8080
+#   Emails        → http://localhost:8026 (Mailpit)
 
 services:
   app:
@@ -28,6 +29,11 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Every email the site sends lands in Mailpit: http://localhost:8026
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_ENCRYPTION: null
     volumes:
       - ./backend:/var/www/html
       - app-vendor:/var/www/html/vendor
@@ -37,6 +43,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - webnova-local
+
+  # Local mailbox: catches all outgoing email (nothing is delivered). Inbox at http://localhost:8026
+  # (8026, not Mailpit's usual 8025, which another local project uses)
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8026:8025"
     networks:
       - webnova-local
 

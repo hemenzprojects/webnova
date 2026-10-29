@@ -1,3 +1,15 @@
+// A signed-in member of the member portal (Membership plugin)
+export interface Member {
+  name: string
+  email: string
+  member_number: string | null
+  membership_type: string | null
+  status: 'active' | 'suspended' | string
+  status_label: string
+  is_active: boolean
+  member_since: string | null
+}
+
 export const useApi = () => {
   const config = useRuntimeConfig()
   const apiBase = process.server ? config.apiBaseSSR : config.public.apiBase
@@ -10,12 +22,17 @@ export const useApi = () => {
     return host ? { Host: host, 'X-Forwarded-Host': host } : {}
   }
 
+  // The visitor's cookies, for endpoints on their session (forwarded during SSR; the browser sends its own)
+  const cookieHeaders = (): Record<string, string> => (process.server ? useRequestHeaders(['cookie']) : {})
+
   const fetchPages = async () => {
     return await $fetch(`${apiBase}/pages`, { headers: ssrHeaders() })
   }
 
+  // Sends the visitor's cookies (forwarded during SSR): members-only pages need the member portal's sign-in.
+  // A members-only page the visitor may not see answers 403 { restricted, reason, title }.
   const fetchPage = async (slug: string) => {
-    return await $fetch(`${apiBase}/pages/${slug}`, { headers: ssrHeaders() })
+    return await $fetch(`${apiBase}/pages/${slug}`, { headers: { ...ssrHeaders(), ...cookieHeaders(), Accept: 'application/json' }, credentials: 'include' })
   }
 
   const fetchNews = async (params = {}) => {
@@ -112,6 +129,28 @@ export const useApi = () => {
     return await $fetch(`${apiBase}/membership/registrations/${encodeURIComponent(reference)}/pay`, { method: 'POST', headers: { Accept: 'application/json' } })
   }
 
+  // Membership plugin, member portal (Member accounts feature). Runs on the visitor's session:
+  // cookies are forwarded during SSR, and changes send the XSRF token (utils/xsrf.ts).
+  const memberRequest = async <T = any>(path: string, method: 'GET' | 'POST' = 'GET', body?: Record<string, any>): Promise<T> => {
+    return await $fetch<T>(`${apiBase}/membership/account${path}`, {
+      method,
+      body,
+      headers: { ...ssrHeaders(), ...cookieHeaders(), ...xsrfHeaders(), Accept: 'application/json' },
+      credentials: 'include',
+    })
+  }
+
+  const fetchMemberSession = () => memberRequest<{ member: Member | null }>('')
+  const memberLogin = (email: string, password: string, remember: boolean) =>
+    memberRequest<{ member: Member }>('/login', 'POST', { email, password, remember })
+  const memberLogout = () => memberRequest<{ member: null }>('/logout', 'POST')
+  const memberForgotPassword = (email: string) => memberRequest<{ message: string }>('/forgot-password', 'POST', { email })
+  const memberSetPassword = (data: { token: string; email: string; password: string; password_confirmation: string }) =>
+    memberRequest<{ member: Member }>('/reset-password', 'POST', data)
+  const memberChangePassword = (data: { current_password: string; password: string; password_confirmation: string }) =>
+    memberRequest<{ message: string }>('/password', 'POST', data)
+  const fetchMemberPages = () => memberRequest<{ pages: { title: string; slug: string; excerpt: string | null }[] }>('/pages')
+
   // Donations plugin
   const fetchDonationForm = async () => {
     return await $fetch(`${apiBase}/donations/form`, { headers: ssrHeaders() })
@@ -184,6 +223,13 @@ export const useApi = () => {
     submitMembership,
     fetchMembershipStatus,
     retryMembershipPayment,
+    fetchMemberSession,
+    memberLogin,
+    memberLogout,
+    memberForgotPassword,
+    memberSetPassword,
+    memberChangePassword,
+    fetchMemberPages,
     fetchDonationForm,
     submitDonation,
     fetchDonationStatus,

@@ -28,6 +28,12 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    /** Membership plugin's member portal (Member accounts feature) is on for this site */
+    public static function memberPortalOn(): bool
+    {
+        return app(\App\Plugins\PluginManager::class)->featureIsActive('membership', \App\Plugins\Membership\MembershipPlugin::FEATURE_ACCOUNTS);
+    }
+
     public static function tenantDir(string $dir): \Closure
     {
         return fn() => (tenancy()->tenant?->id ? tenancy()->tenant->id . '/' : '') . $dir;
@@ -60,6 +66,18 @@ class PageResource extends Resource
                                 Forms\Components\Toggle::make('is_published')
                                     ->required()
                                     ->default(false),
+                                // Membership plugin, Member accounts feature; still shown for a
+                                // members-only page while it is off, so it can be made public again
+                                Forms\Components\Select::make('visibility')
+                                    ->label('Who can see this page')
+                                    ->options(Page::VISIBILITIES)
+                                    ->default(Page::VISIBILITY_PUBLIC)
+                                    ->required()
+                                    ->native(false)
+                                    ->helperText(fn (?Page $record) => static::memberPortalOn()
+                                        ? 'Members only: signed-in members with an active membership, and admins. Everyone else sees a "members only" message with a sign-in button.'
+                                        : 'The member portal is switched off (Membership → Settings → Features), so members-only pages are visible to admins only.')
+                                    ->visible(fn (?Page $record) => static::memberPortalOn() || $record?->isMembersOnly()),
                                 Forms\Components\TextInput::make('order')
                                     ->numeric()
                                     ->default(0),
@@ -1702,6 +1720,12 @@ class PageResource extends Resource
                     ]),
                 Tables\Columns\IconColumn::make('is_published')
                     ->boolean(),
+                Tables\Columns\TextColumn::make('visibility')
+                    ->label('Who can see it')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => Page::VISIBILITIES[$state] ?? $state)
+                    ->color(fn (string $state) => $state === Page::VISIBILITY_MEMBERS ? 'warning' : 'gray')
+                    ->visible(fn () => static::memberPortalOn() || Page::where('visibility', Page::VISIBILITY_MEMBERS)->exists()),
                 Tables\Columns\TextColumn::make('order')
                     ->numeric()
                     ->sortable(),

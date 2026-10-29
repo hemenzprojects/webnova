@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\HeaderController;
 use App\Http\Controllers\Api\ThemeController;
 use App\Plugins\ComingSoon\Http\ComingSoonController;
 use App\Plugins\Donations\Http\DonationController;
+use App\Plugins\Membership\Http\MemberAccountController;
 use App\Plugins\Membership\Http\MembershipController;
 use App\Plugins\PluginManager;
 use App\Services\SiteHealth;
@@ -45,7 +46,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/pages/{id}/blocks', [PageController::class, 'updateBlocks']);
         Route::post('/pages/{id}/publish', [PageController::class, 'publish']);
     });
-    Route::get('/pages/{slug}', [PageController::class, 'show']);
+    // On the web session: members-only pages need the member portal's (or the admin's) sign-in
+    Route::middleware('web')->get('/pages/{slug}', [PageController::class, 'show']);
 
     // News
     Route::get('/news', [NewsController::class, 'index']);
@@ -103,7 +105,11 @@ Route::prefix('v1')->group(function () {
     Route::post('/contact-form', [ContactFormController::class, 'store']);
 
     // Plugins switched on for this site (the frontend hides blocks of inactive ones)
-    Route::get('/plugins', fn (PluginManager $plugins) => response()->json(['active' => $plugins->activeKeys()]));
+    Route::get('/plugins', fn (PluginManager $plugins) => response()->json([
+        'active' => $plugins->activeKeys(),
+        // Switched-on features of each active plugin, e.g. {"membership": ["accounts"]}
+        'features' => (object) collect($plugins->activeKeys())->mapWithKeys(fn ($key) => [$key => $plugins->activeFeatures($key)])->filter()->all(),
+    ]));
 
     // Coming Soon plugin: whether to hide the public site. Uses the admin
     // session, so signed-in admins still see the real site.
@@ -116,6 +122,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
         Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
         Route::post('/paystack/webhook', [MembershipController::class, 'paystackWebhook']);
+
+        // Member portal (Member accounts feature): session sign-in on the "member" guard
+        Route::prefix('account')->middleware(['web', 'plugin:membership,accounts'])->group(function () {
+            Route::get('/', [MemberAccountController::class, 'show']);
+            Route::post('/login', [MemberAccountController::class, 'login'])->middleware('throttle:20,1');
+            Route::post('/logout', [MemberAccountController::class, 'logout']);
+            Route::post('/forgot-password', [MemberAccountController::class, 'forgotPassword'])->middleware('throttle:5,1');
+            Route::post('/reset-password', [MemberAccountController::class, 'resetPassword'])->middleware('throttle:10,1');
+            Route::post('/password', [MemberAccountController::class, 'changePassword'])->middleware('throttle:10,1');
+            Route::get('/pages', [MemberAccountController::class, 'pages']);
+        });
     });
 
     // Donations plugin

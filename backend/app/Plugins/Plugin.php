@@ -51,6 +51,28 @@ abstract class Plugin
         return null;
     }
 
+    /**
+     * Parts of the plugin a site's admin switches on separately, e.g.
+     * ['accounts' => ['label' => 'Member accounts', 'description' => '…', 'requires' => []]].
+     * `requires` lists other features of this plugin that must be on too.
+     * Screens declare protected static ?string $feature = '{key}'; routes use "plugin:{plugin},{feature}".
+     *
+     * @return array<string, array{label: string, description: string, requires?: string[]}>
+     */
+    public function features(): array
+    {
+        return [];
+    }
+
+    /**
+     * Whether this site may switch a feature on. Every feature is available to
+     * every site for now; a subscription check for paid features goes here.
+     */
+    public function isFeatureAvailableFor(\App\Models\Tenant $tenant, string $feature): bool
+    {
+        return array_key_exists($feature, $this->features());
+    }
+
     /** Page-builder block types this plugin adds, hidden in the editor while inactive */
     public function blocks(): array
     {

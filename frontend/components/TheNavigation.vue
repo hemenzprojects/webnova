@@ -67,6 +67,7 @@
               <span class="block font-semibold text-gray-900 group-hover:text-primary transition">{{ header.email }}</span>
             </span>
           </a>
+          <MemberLink v-if="memberPortal" :member="member" class="px-6 text-gray-700 hover:text-primary" :class="{ 'border-l border-gray-200': header.phone || header.email }" />
           <HeaderCta
             v-for="b in buttons"
             :key="b.variant"
@@ -80,6 +81,7 @@
         <!-- Simple and top bar designs: menu and button beside the logo -->
         <div v-else class="hidden md:flex items-center gap-4">
           <HeaderMenu :menu="headerMenu" :loading="menuLoading" :style="navStyle" />
+          <MemberLink v-if="memberPortal" :member="member" class="text-gray-700 hover:text-primary" />
           <HeaderCta
             v-for="b in buttons"
             :key="b.variant"
@@ -161,6 +163,11 @@
             <NuxtLink to="/contact" class="text-gray-700 hover:text-primary transition">Contact</NuxtLink>
           </div>
 
+          <!-- Member portal (Membership plugin) -->
+          <div v-if="memberPortal" class="mt-4 pt-4 border-t border-gray-200 px-4">
+            <MemberLink :member="member" class="text-gray-700" />
+          </div>
+
           <!-- Contact details and button (designs that show them on desktop) -->
           <div v-if="buttons.length || (header.layout !== 'classic' && (header.phone || header.email))" class="mt-4 pt-4 border-t border-gray-200 space-y-3">
             <template v-if="header.layout !== 'classic'">
@@ -231,6 +238,9 @@ const buttons = computed(() => [
   ...(header.value.cta ? [{ button: header.value.cta, variant: 'solid' as const }] : []),
   ...(header.value.cta2 ? [{ button: header.value.cta2, variant: 'outline' as const }] : []),
 ])
+
+// "Member login" / "My account", when the site has a member portal (Membership plugin)
+const { member, enabled: memberPortal } = useMember()
 
 // Fetch the header menu dynamically
 const { fetchMenuByLocation } = useMenu()

@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class TenantPlugin extends Model
 {
-    protected $fillable = ['key', 'is_active', 'settings', 'activated_at'];
+    protected $fillable = ['key', 'is_active', 'features', 'settings', 'activated_at'];
 
     protected $casts = [
         'is_active' => 'boolean',
+        // keys of the Plugin::features() switched on
+        'features' => 'array',
         'settings' => 'encrypted:array',
         'activated_at' => 'datetime',
     ];

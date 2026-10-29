@@ -27,12 +27,24 @@ trait SharedAreaAccess
         return property_exists(static::class, 'plugin') ? static::$plugin : null;
     }
 
-    /** False for a plugin's screens while the plugin is switched off */
+    /** A feature of the plugin the screen belongs to (Plugin::features()), or null */
+    public static function featureKey(): ?string
+    {
+        return property_exists(static::class, 'feature') ? static::$feature : null;
+    }
+
+    /** False for a plugin's screens while the plugin, or the screen's feature of it, is switched off */
     public static function pluginIsActive(): bool
     {
         $plugin = static::pluginKey();
+        if (! $plugin) {
+            return true;
+        }
 
-        return ! $plugin || app(PluginManager::class)->isActive($plugin);
+        $plugins = app(PluginManager::class);
+        $feature = static::featureKey();
+
+        return $plugins->isActive($plugin) && (! $feature || $plugins->featureIsActive($plugin, $feature));
     }
 
     public static function canAccessArea(): bool

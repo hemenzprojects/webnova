@@ -38,6 +38,19 @@ class MembershipPlugin extends Plugin
         return ['membership_form'];
     }
 
+    public const FEATURE_ACCOUNTS = 'accounts';
+
+    public function features(): array
+    {
+        return [
+            self::FEATURE_ACCOUNTS => [
+                'label' => 'Member accounts and members-only pages',
+                'description' => 'Approved, paid members get a login and a member portal on the website (/account), and pages can be made visible to members only.',
+                'requires' => [],
+            ],
+        ];
+    }
+
     /**
      * First activation: a ready-to-use form and two example membership types.
      */

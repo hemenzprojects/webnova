@@ -3,11 +3,15 @@
 namespace App\Plugins\Membership\Filament\Pages;
 
 use App\Admin\Concerns\InFunctionalAreaPage;
+use App\Models\Page as SitePage;
+use App\Plugins\Membership\MembershipPlugin;
 use App\Plugins\Membership\Support\MembershipSettings;
+use App\Plugins\PluginManager;
 use App\Plugins\Membership\Support\Paystack;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
@@ -24,7 +28,7 @@ class MembershipSettingsPage extends Page
 
     protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $title = 'Membership settings';
 
@@ -39,6 +43,7 @@ class MembershipSettingsPage extends Page
         $settings = MembershipSettings::all();
         // Never send the secret key back to the browser
         $settings['paystack_secret_key'] = null;
+        $settings['features'] = app(PluginManager::class)->enabledFeatures('membership');
         $this->form->fill($settings);
     }
 
@@ -47,8 +52,51 @@ class MembershipSettingsPage extends Page
         $webhookUrl = request()->getSchemeAndHttpHost() . '/api/v1/membership/paystack/webhook';
         $hasSecret = filled(MembershipSettings::get('paystack_secret_key'));
 
+        $features = app(PluginManager::class)->get('membership')->features();
+
         return $form
             ->schema([
+                Forms\Components\Section::make('Features')
+                    ->description('Switch parts of Membership on or off. A feature that is off disappears from the admin and the website; its data is kept.')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('features')
+                            ->hiddenLabel()
+                            ->options(collect($features)->map(fn ($f) => $f['label'])->all())
+                            ->descriptions(collect($features)->map(fn ($f) => $f['description'])->all())
+                            ->live(),
+                    ]),
+
+                Forms\Components\Section::make('Member portal')
+                    ->description('Members sign in at /account. Their account is created when a registration is approved and nothing is owed, and they set their password from the welcome email.')
+                    ->visible(fn (Get $get) => in_array(MembershipPlugin::FEATURE_ACCOUNTS, $get('features') ?? [], true))
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('member_number_prefix')
+                            ->label('Member ID prefix')
+                            ->placeholder(MembershipSettings::memberNumberPrefix())
+                            ->helperText(fn (Get $get) => 'Member IDs look like ' . MembershipSettings::memberNumberPrefix() . '-' . now()->format('Y') . '-0001. Changing it only affects new members.')
+                            ->regex('/^[A-Za-z0-9]{1,12}$/')
+                            ->maxLength(12),
+                        Forms\Components\Placeholder::make('members_only_pages')
+                            ->label('Members-only pages')
+                            ->content(function () {
+                                $pages = SitePage::where('visibility', SitePage::VISIBILITY_MEMBERS)->orderBy('title')->pluck('title');
+
+                                return $pages->isEmpty()
+                                    ? 'None yet. Choose "Members only" under Who can see this page when editing a page (Content → Pages).'
+                                    : $pages->implode(', ');
+                            }),
+                        Forms\Components\TextInput::make('mail_from_address')
+                            ->label('Send member emails from')
+                            ->email()
+                            ->placeholder(config('mail.from.address'))
+                            ->helperText('Welcome and password emails come from this address. Its domain must be set up with the mail provider, or they may land in spam.'),
+                        Forms\Components\TextInput::make('mail_from_name')
+                            ->label('Sender name')
+                            ->placeholder(fn () => \App\Models\Branding::settings()->site_name)
+                            ->maxLength(100),
+                    ]),
+
                 Forms\Components\Section::make('Registrations')
                     ->columns(2)
                     ->schema([
@@ -132,9 +180,16 @@ class MembershipSettingsPage extends Page
             unset($data['paystack_secret_key']);
         }
 
+        $wanted = $data['features'] ?? [];
+        unset($data['features']);
+        $on = app(PluginManager::class)->setFeatures('membership', $wanted);
+
         MembershipSettings::save($data);
 
-        Notification::make()->title('Membership settings saved')->success()->send();
+        $added = array_diff($on, $wanted);
+        Notification::make()->title('Membership settings saved')
+            ->body($added ? 'Also switched on, because other features need it: ' . implode(', ', array_map(fn ($f) => app(PluginManager::class)->get('membership')->features()[$f]['label'], $added)) . '.' : null)
+            ->success()->send();
         $this->redirect(static::getUrl());
     }
 }

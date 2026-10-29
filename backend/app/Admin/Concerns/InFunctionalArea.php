@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * The class declares:  protected static string $area = 'content';
  * and, for plugins:    protected static ?string $plugin = 'membership';
+ * and, for a plugin feature: protected static ?string $feature = 'accounts';
  */
 trait InFunctionalArea
 {

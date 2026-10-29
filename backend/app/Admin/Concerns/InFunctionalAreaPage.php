@@ -10,6 +10,7 @@ namespace App\Admin\Concerns;
  *
  * The class declares:  protected static string $area = 'appearance';
  * and, for plugins:    protected static ?string $plugin = 'membership';
+ * and, for a plugin feature: protected static ?string $feature = 'accounts';
  */
 trait InFunctionalAreaPage
 {

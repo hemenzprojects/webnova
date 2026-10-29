@@ -9,6 +9,7 @@ use App\Plugins\Membership\Models\MembershipForm;
 use App\Plugins\Membership\Models\MembershipRegistration;
 use App\Plugins\Membership\Models\MembershipType;
 use App\Plugins\Membership\Support\FormSchema;
+use App\Plugins\Membership\Support\MemberAccounts;
 use App\Plugins\Membership\Support\Registrar;
 use Filament\Forms;
 use Filament\Infolists;
@@ -170,12 +171,20 @@ class MembershipRegistrationResource extends Resource
             ->color('success')
             ->visible(fn (MembershipRegistration $record) => $record->status !== 'approved')
             ->requiresConfirmation()
-            ->modalDescription(fn (MembershipRegistration $record) => $record->payment_status === 'unpaid'
+            ->modalDescription(fn (MembershipRegistration $record) => in_array($record->payment_status, ['unpaid', 'failed'], true)
                 ? 'This registration has not been paid yet. Approve it anyway?'
+                    . (app(MemberAccounts::class)->enabled() ? ' The member account and welcome email follow once it is marked as paid.' : '')
                 : null)
             ->action(function (MembershipRegistration $record) {
                 $record->update(['status' => 'approved', 'reviewed_at' => now()]);
-                Notification::make()->title('Registration approved')->success()->send();
+                $account = $record->memberAccount()->first();
+                Notification::make()->title('Registration approved')
+                    ->body($account
+                        ? "Member account {$account->member_number} is ready" . ($account->hasPassword() ? '.' : '; a welcome email was sent to set a password.')
+                        : (app(MemberAccounts::class)->enabled() && in_array($record->payment_status, ['unpaid', 'failed'], true)
+                            ? 'No member account yet: it is created, and the welcome email sent, once the registration is marked as paid.'
+                            : null))
+                    ->success()->send();
             });
     }
 
@@ -218,7 +227,12 @@ class MembershipRegistrationResource extends Resource
                             'paid_at' => now(),
                             'payment_reference' => $data['payment_reference'] ?: $record->payment_reference,
                         ]);
-                        Notification::make()->title('Marked as paid')->success()->send();
+                        $account = $record->memberAccount()->first();
+                        Notification::make()->title('Marked as paid')
+                            ->body($account && ! $account->hasPassword()
+                                ? "Member account {$account->member_number} is ready; a welcome email was sent to set a password."
+                                : ($record->status !== 'approved' && app(MemberAccounts::class)->enabled() ? 'The member account is created once the registration is approved.' : null))
+                            ->success()->send();
                     }),
 
                 \Filament\Actions\Action::make('checkPayment')

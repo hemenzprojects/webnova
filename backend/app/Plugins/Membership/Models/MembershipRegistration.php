@@ -42,6 +42,19 @@ class MembershipRegistration extends Model
             // e.g. MEM-2026-7KQ2XW: readable on receipts, not guessable
             $registration->reference ??= 'MEM-' . now()->format('Y') . '-' . Str::upper(Str::random(6));
         });
+
+        // Approved and nothing owed: the member gets their portal account (Member accounts feature),
+        // however it got there (admin approval, payment confirmation, free membership)
+        static::saved(function (self $registration) {
+            if ($registration->wasRecentlyCreated || $registration->wasChanged(['status', 'payment_status'])) {
+                app(\App\Plugins\Membership\Support\MemberAccounts::class)->syncFromRegistration($registration);
+            }
+        });
+    }
+
+    public function memberAccount(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MemberAccount::class);
     }
 
     public function membershipType(): BelongsTo

@@ -1,5 +1,7 @@
 <template>
   <ComingSoonScreen v-if="comingSoon?.enabled" :settings="comingSoon" :branding="branding" />
+  <!-- Member portal pages (/account) bring their own layout -->
+  <NuxtPage v-else-if="route.meta.portal" />
   <div v-else class="min-h-screen bg-white">
     <div v-if="comingSoon?.preview && !route.path.startsWith('/elementor')" class="bg-amber-400 text-amber-950 text-sm text-center px-4 py-2">
       {{ comingSoon.mode === 'maintenance' ? 'Maintenance' : 'Coming soon' }} mode is on: visitors see the
@@ -33,6 +35,14 @@ useSeoMeta({
   ogSiteName: () => branding.value?.site_name || undefined,
   ogTitle: () => branding.value?.site_name || undefined,
   ogDescription: siteDescription,
+})
+
+// Member portal (Membership plugin): whether the site has one, and who is signed in. Used by the
+// header's "Member login" link; the portal's pages load it again through their middleware if needed.
+const { load: loadMember } = useMember()
+await useAsyncData('member-session', async () => {
+  await loadMember()
+  return true
 })
 
 // Coming Soon plugin: hides the site from visitors, not from signed-in admins

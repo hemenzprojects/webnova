@@ -17,6 +17,10 @@ class MembershipSettings
         'success_message' => 'Thank you! Your registration has been received. We will be in touch by email.',
         'paystack_public_key' => null,
         'paystack_secret_key' => null,
+        // Member accounts feature
+        'member_number_prefix' => null,
+        'mail_from_address' => null,
+        'mail_from_name' => null,
     ];
 
     public static function all(): array
@@ -32,6 +36,31 @@ class MembershipSettings
     public static function save(array $values): void
     {
         app(PluginManager::class)->saveSettings('membership', array_merge(self::all(), $values));
+    }
+
+    /** Start of every Member ID, e.g. "APBA" in APBA-2026-0042. Defaults to the site's ID. */
+    public static function memberNumberPrefix(): string
+    {
+        $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) self::get('member_number_prefix')));
+
+        if ($prefix === '') {
+            $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) tenant()?->getTenantKey()));
+        }
+
+        return $prefix !== '' ? $prefix : 'MEM';
+    }
+
+    /**
+     * Sender of emails to members, e.g. ['membership@apba.org', 'APBA Membership'];
+     * null for the platform's default sender.
+     *
+     * @return array{0: string, 1: ?string}|null
+     */
+    public static function mailFrom(): ?array
+    {
+        $address = self::get('mail_from_address');
+
+        return filled($address) ? [$address, self::get('mail_from_name') ?: null] : null;
     }
 
     public static function paystack(): Paystack

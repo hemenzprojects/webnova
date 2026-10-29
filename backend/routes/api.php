@@ -76,6 +76,7 @@ Route::prefix('v1')->group(function () {
 
     // Theme
     Route::get('/theme', [ThemeController::class, 'index']);
+    Route::get('/themes/{slug}/screenshot', [ThemeController::class, 'screenshot']);
 
     // Menus
     Route::get('/menus', [MenuController::class, 'index']);

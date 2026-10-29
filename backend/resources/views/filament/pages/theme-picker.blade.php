@@ -7,6 +7,15 @@
             @php($c = $theme['tokens']['colors'] ?? [])
             @php($isActive = $theme['slug'] === $active)
             <x-filament::section>
+                @if ($theme['screenshot'])
+                    {{-- Top of the theme's home page --}}
+                    <img
+                        src="{{ $theme['screenshot'] }}"
+                        alt="{{ $theme['name'] }} theme"
+                        loading="lazy"
+                        style="display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:1rem"
+                    >
+                @else
                 {{-- Miniature of the theme: header bar, hero band, cards, footer --}}
                 <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.08);margin-bottom:1rem">
                     <div style="height:14px;background:{{ $c['surface'] ?? '#fff' }};display:flex;align-items:center;gap:4px;padding:0 8px">
@@ -26,6 +35,7 @@
                     </div>
                     <div style="height:14px;background:{{ $c['footerBg'] ?? $c['primary'] ?? '#000' }}"></div>
                 </div>
+                @endif
 
                 <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
                     <h3 style="font-size:1.05rem;font-weight:600">{{ $theme['name'] }}</h3>

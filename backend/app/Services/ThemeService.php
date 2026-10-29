@@ -17,6 +17,25 @@ class ThemeService
     }
 
     /**
+     * The theme's screenshot, resources/themes/{slug}/screenshot.{webp,png,jpg}, if it has one.
+     */
+    public function screenshotPath(string $slug): ?string
+    {
+        if (! array_key_exists($slug, $this->all())) {
+            return null;
+        }
+
+        foreach (['webp', 'png', 'jpg'] as $ext) {
+            $path = resource_path("themes/{$slug}/screenshot.{$ext}");
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Look up a theme by slug, falling back to 'default'.
      */
     public function get(string $slug): array

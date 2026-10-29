@@ -47,7 +47,7 @@ return [
         ],
 
         'edubright' => [
-            'name' => 'Edubright',
+            'name' => 'Edulight',
             'description' => 'Purple and lavender education theme with pill labels, rounded cards, testimonials and an FAQ.',
             'preview' => '/themes/edubright-preview.png',
             'tokens' => [

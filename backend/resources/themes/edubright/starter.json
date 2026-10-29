@@ -1,6 +1,6 @@
 {
   "branding": {
-    "site_name": "Edubright",
+    "site_name": "Edulight",
     "site_tagline": "Empowering minds for a better tomorrow",
     "site_description": "Practical, career-focused courses taught by experienced instructors, online and on campus.",
     "logo": "theme:logo.svg",
@@ -13,7 +13,7 @@
     "accent_dark": "#4F27B3",
     "text_color": "#1E1B4B",
     "background_color": "#FFFFFF",
-    "contact_email": "hello@edubright.example",
+    "contact_email": "hello@edulight.example",
     "contact_phone": "+233 30 000 0000",
     "contact_address": "12 Learning Avenue\nAccra, Ghana",
     "social_links": [
@@ -314,7 +314,7 @@
             "heading": "Get in touch",
             "description": "Questions about a course, fees or enrolment? Send us a message and our admissions team will reply within one working day.",
             "submitText": "Send Message",
-            "emailTo": "hello@edubright.example",
+            "emailTo": "hello@edulight.example",
             "showPhone": true,
             "showCompany": false
           }
@@ -517,6 +517,6 @@
         { "widgets": [{ "type": "social", "data": { "heading": "Follow us" } }] }
       ]
     },
-    { "key": "footer_copyright", "value": "© {year} Edubright. All rights reserved.", "type": "text", "group": "footer" }
+    { "key": "footer_copyright", "value": "© {year} Edulight. All rights reserved.", "type": "text", "group": "footer" }
   ]
 }

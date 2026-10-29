@@ -27,4 +27,14 @@ class ThemeController extends Controller
                 ->values(),
         ]);
     }
+
+    /**
+     * A theme's screenshot for the Themes page (it lives with the theme's package, outside public/).
+     */
+    public function screenshot(string $slug)
+    {
+        $path = $this->themes->screenshotPath($slug) ?? abort(404);
+
+        return response()->file($path, ['Cache-Control' => 'public, max-age=86400']);
+    }
 }

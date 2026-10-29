@@ -41,11 +41,16 @@ class ThemePicker extends Page
     public function getThemes(): array
     {
         $installer = app(ThemeInstaller::class);
+        $themes = app(ThemeService::class);
 
-        return collect(app(ThemeService::class)->all())
+        return collect($themes->all())
             ->map(fn (array $theme, string $slug) => $theme + [
                 'slug' => $slug,
                 'installable' => $installer->hasPackage($slug),
+                // The file's time in the URL, so a new screenshot is not hidden by the browser cache
+                'screenshot' => ($path = $themes->screenshotPath($slug))
+                    ? "/api/v1/themes/{$slug}/screenshot?v=".filemtime($path)
+                    : null,
             ])
             ->values()
             ->all();

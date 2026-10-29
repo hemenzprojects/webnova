@@ -19,7 +19,7 @@ All starter photos come from Wikimedia Commons and are marked **CC0** or **publi
 | edubright/blog-1.jpg | File:Pexels-pixabay-256541.jpg |
 | edubright/blog-2.jpg, default/news-1.jpg | File:AfroCuration Ghana 2023 on KNUST Campus Students and Lecturers.jpg |
 | edubright/blog-3.jpg | File:A group of female students looking on a laptop.jpg |
-| default/hero.jpg | File:Ghana Senior High School Students.jpg |
+| default/hero.jpg (same photo as edubright/why-choose-us.jpg) | File:A group of female students looking on a laptop 01.jpg |
 | default/service-1.jpg | File:CompSci.jpg |
 
 Source URL pattern: `https://commons.wikimedia.org/wiki/<File name>`

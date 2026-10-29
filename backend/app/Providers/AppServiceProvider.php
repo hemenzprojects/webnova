@@ -31,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Platform → Email settings (central admin): applied once the mail manager is first used
+        $this->app->afterResolving('mail.manager', fn () => \App\Services\PlatformMail::apply());
+
         // Register model observers
         Menu::observe(MenuObserver::class);
         MenuItem::observe(MenuItemObserver::class);

@@ -260,6 +260,10 @@ Optional feature modules that each site's admin activates under Customize → Pl
   - Membership types with "Offered on the application form" off (e.g. Honorary) are granted by the committee: admins give them under Members.
   - **Members-only pages:** `pages.visibility` (`public` / `members`, "Who can see this page" in the page form). `GET /api/v1/pages/{slug}` runs on the web session and answers 403 `{restricted, reason: login|inactive|unavailable}` unless an active member or an admin is signed in; the site shows `MembersOnlyNotice.vue`. While the feature is off these pages stay hidden (admins only), never public. Files linked from them are still public URLs.
 
+## Email (outgoing mail server)
+
+Central admin → Platform → **Email settings** (`App\Filament\Pages\EmailSettings`, `App\Services\PlatformMail`): the SMTP server every site sends through, stored encrypted in the central `platform_settings` table (`App\Models\PlatformSetting`, key `mail`). Applied when the mail manager is first resolved in a request or job (`afterResolving('mail.manager')` in `AppServiceProvider`): it adds the `platform` mailer and makes it the default, with its default sender. While nothing is saved, or it is switched off, the server's `MAIL_…` settings are used (locally: Mailpit). Saving logs in to the server first and refuses settings it rejects; "Send test email" uses the form's values. Sites keep their own sender name and address (e.g. Membership → Emails), except that Gmail rewrites the sender to the Gmail account. Long-running workers pick up changes when they restart (`queue:work` restarts hourly).
+
 ## Scheduler
 
 `deploy/fly/docker/supervisord.conf` runs `php artisan schedule:work` and `php artisan queue:work` (both as `www-data`, like php-fpm, so files they write in `storage/` stay writable by the site); scheduled jobs are in `routes/console.php` (membership data retention, Stanbic payment checks). `fly.toml` keeps one machine always running (`auto_stop_machines = 'off'`, `min_machines_running = 1`): a stopped machine runs no scheduler. Site Health does not depend on it.

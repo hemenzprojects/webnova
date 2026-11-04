@@ -200,11 +200,12 @@ class Registrar
             return;
         }
 
+        // The message never shows the Member ID or reference: anyone can type any email here
         $account = \App\Plugins\Membership\Models\MemberAccount::where('email', $email)->first();
         if ($account) {
             $message = app(MemberAccounts::class)->enabled()
-                ? "This email already belongs to a member ({$account->member_number}). Please log in to the member portal to renew your membership or update your details."
-                : "This email already belongs to a member ({$account->member_number}). If you need help, please contact us.";
+                ? 'This email already belongs to a member. Please log in to the member portal (with this email) to renew your membership or update your details.'
+                : 'This email already belongs to a member. If you need help, please contact us.';
         } else {
             $earlier = MembershipRegistration::whereRaw('lower(email) = ?', [$email])
                 ->where('status', 'approved')
@@ -213,7 +214,7 @@ class Registrar
             if (! $earlier) {
                 return;
             }
-            $message = "This email is already registered (reference {$earlier->reference}). If you need help, please contact us.";
+            $message = 'This email is already registered. If you need help, please contact us.';
         }
 
         throw ValidationException::withMessages(['answers.' . $emailField['key'] => $message]);

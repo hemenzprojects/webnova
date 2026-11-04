@@ -5,6 +5,7 @@ namespace App\Plugins\Membership\Support;
 use App\Plugins\Membership\Models\MemberAccount;
 use App\Plugins\Membership\Models\MembershipPayment;
 use App\Plugins\Membership\Models\MembershipRegistration;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,6 +19,20 @@ class Payments
      * same application returns the existing one).
      */
     public function recordForRegistration(MembershipRegistration $registration, ?MemberAccount $account = null): MembershipPayment
+    {
+        // Two payments in the same instant can pick the same receipt number: the second tries the next one
+        for ($try = 1; ; $try++) {
+            try {
+                return $this->record($registration, $account);
+            } catch (UniqueConstraintViolationException $e) {
+                if ($try >= 3) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    private function record(MembershipRegistration $registration, ?MemberAccount $account): MembershipPayment
     {
         return DB::connection($registration->getConnectionName())->transaction(function () use ($registration, $account) {
             $existing = MembershipPayment::where('membership_registration_id', $registration->id)->lockForUpdate()->first();

@@ -137,12 +137,22 @@ class MemberAccounts
     /** A new account with the next Member ID */
     public function create(array $attributes): MemberAccount
     {
-        return DB::transaction(function () use ($attributes) {
-            $account = MemberAccount::create($attributes + ['status' => 'active']);
-            $account->update(['member_number' => $this->memberNumber($account)]);
+        // Two members joining in the same instant can pick the same Member ID: the second tries the next one
+        for ($try = 1; ; $try++) {
+            try {
+                return DB::transaction(function () use ($attributes) {
+                    $account = MemberAccount::create($attributes + ['status' => 'active']);
+                    $account->update(['member_number' => $this->memberNumber($account)]);
 
-            return $account;
-        });
+                    return $account;
+                });
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                // Only a clash of Member IDs is worth another try (not e.g. an email that exists already)
+                if ($try >= 3 || ! str_contains($e->getMessage(), 'member_number')) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     /**

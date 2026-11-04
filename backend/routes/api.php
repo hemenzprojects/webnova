@@ -121,7 +121,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/form', [MembershipController::class, 'form']);
         Route::get('/privacy', [MembershipController::class, 'privacy']);
         Route::post('/register', [MembershipController::class, 'register'])->middleware('throttle:10,1');
-        Route::get('/registrations/{reference}', [MembershipController::class, 'status']);
+        // Asks the payment provider each time: limited like the other public endpoints
+        Route::get('/registrations/{reference}', [MembershipController::class, 'status'])->middleware('throttle:60,1');
         Route::post('/registrations/{reference}/pay', [MembershipController::class, 'retryPayment'])->middleware('throttle:10,1');
         // The receipt PDF of an application's payment (from the page Paystack returns to)
         Route::get('/registrations/{reference}/receipt', [MembershipController::class, 'receiptPdf'])->middleware('throttle:30,1');

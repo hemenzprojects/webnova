@@ -70,6 +70,31 @@ class MembershipRegistration extends Model
         });
     }
 
+    /**
+     * Which provider a payment attempt went to, and its order id there (N-Genius
+     * needs it). gateway_orders keeps every attempt: {reference: {provider, order_id}}.
+     *
+     * @return array{provider: string, order_id: ?string}
+     */
+    public function paymentAttempt(?string $reference = null): array
+    {
+        $reference ??= $this->payment_reference;
+        $entry = ($this->gateway_orders ?? [])[$reference] ?? null;
+
+        if (is_array($entry)) {
+            return ['provider' => $entry['provider'] ?? ($this->payment_provider ?: 'paystack'), 'order_id' => $entry['order_id'] ?? null];
+        }
+        // Rows from before attempts kept their provider: an order id alone was a Stanbic one
+        if (is_string($entry)) {
+            return ['provider' => 'stanbic', 'order_id' => $entry];
+        }
+
+        return [
+            'provider' => $this->payment_provider ?: 'paystack',
+            'order_id' => $reference === $this->payment_reference ? $this->gateway_order_id : null,
+        ];
+    }
+
     public function payment(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(MembershipPayment::class);

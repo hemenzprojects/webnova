@@ -32,15 +32,17 @@ class CheckMembershipPayments extends Command
                 }
 
                 MembershipRegistration::query()
-                    ->where('payment_provider', 'stanbic')
-                    ->whereNotNull('gateway_order_id')
+                    ->where(fn ($q) => $q->whereNotNull('gateway_orders')->orWhere('payment_provider', 'stanbic'))
                     ->whereIn('payment_status', ['unpaid', 'failed'])
                     ->where('updated_at', '>', now()->subDays(3))
                     ->limit(50)
                     ->get()
                     ->each(function (MembershipRegistration $registration) use ($tenant, $registrar) {
-                        // Every attempt, newest first: the payer may have paid an earlier one in another tab
-                        $attempts = array_reverse(array_keys($registration->gateway_orders ?: [$registration->payment_reference => $registration->gateway_order_id]));
+                        // Every Stanbic attempt, newest first: the payer may have paid an earlier one in another tab
+                        // (Paystack attempts are confirmed by Paystack's webhook)
+                        $attempts = array_reverse(array_keys($registration->gateway_orders ?: [$registration->payment_reference => null]));
+                        $attempts = array_filter($attempts, fn ($attempt) => $registration->paymentAttempt($attempt)['provider'] === 'stanbic'
+                            && filled($registration->paymentAttempt($attempt)['order_id']));
                         foreach ($attempts as $attempt) {
                             try {
                                 if ($registrar->confirmPayment($registration, $attempt)->payment_status === 'paid') {

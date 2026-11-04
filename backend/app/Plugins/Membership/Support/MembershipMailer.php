@@ -171,16 +171,40 @@ class MembershipMailer
         return $this->deliver($to, $name, new MembershipMail($kind, $values, $button, $details, null, $files));
     }
 
+    /**
+     * On the public website, the email goes out just after the page has been
+     * sent, so the visitor (e.g. back from paying) does not wait for the mail
+     * server; a failure is then only logged. In the admin (Livewire requests)
+     * it is sent at once, so actions can say whether it went out; in commands
+     * and jobs too, since those switch between sites.
+     */
     private function deliver(string $to, ?string $name, MembershipMail $mail): bool
     {
-        try {
-            Mail::to($to, $name)->send($mail);
+        $send = function () use ($to, $name, $mail): bool {
+            try {
+                Mail::to($to, $name)->send($mail);
 
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Membership email failed', ['kind' => $mail->kind, 'to' => $to, 'error' => $e->getMessage()]);
+                return true;
+            } catch (Throwable $e) {
+                Log::warning('Membership email failed', ['kind' => $mail->kind, 'to' => $to, 'error' => $e->getMessage()]);
 
-            return false;
+                return false;
+            }
+        };
+
+        if (app()->runningInConsole() || request()->hasHeader('X-Livewire')) {
+            return $send();
         }
+
+        $tenant = tenant();
+        \Illuminate\Support\defer(function () use ($send, $tenant) {
+            if ($tenant && tenant()?->getTenantKey() !== $tenant->getTenantKey()) {
+                tenancy()->initialize($tenant);
+            }
+            $send();
+        });
+
+        return true;
     }
+
 }

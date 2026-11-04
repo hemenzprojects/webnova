@@ -53,10 +53,10 @@ class Payments
                 'currency' => $registration->currency,
                 // Online attempts are "{application reference}-{n}"; anything else was recorded by an admin
                 'method' => $registration->payment_reference && str_starts_with($registration->payment_reference, $registration->reference . '-')
-                    ? ($registration->payment_provider ?: 'paystack')
+                    ? $registration->paymentAttempt()['provider']
                     : 'other',
                 'reference' => $registration->payment_reference,
-                'gateway_reference' => ($registration->gateway_orders ?? [])[$registration->payment_reference] ?? $registration->gateway_order_id,
+                'gateway_reference' => $registration->paymentAttempt()['order_id'],
                 'name' => $registration->name,
                 'email' => $registration->email,
                 'paid_at' => $paidAt,

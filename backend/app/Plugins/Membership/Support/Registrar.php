@@ -112,7 +112,10 @@ class Registrar
         // A fresh reference per attempt, so a failed payment can be retried
         $attempt = $registration->payment_reference ? ((int) substr(strrchr($registration->payment_reference, '-'), 1)) + 1 : 1;
         $reference = "{$registration->reference}-{$attempt}";
-        $registration->update(['payment_reference' => $reference, 'payment_provider' => $gateway->key(), 'gateway_order_id' => null]);
+        // Each attempt remembers its provider, so it is checked there even if the site switches later
+        $attempts = $registration->gateway_orders ?? [];
+        $attempts[$reference] = ['provider' => $gateway->key(), 'order_id' => null];
+        $registration->update(['payment_reference' => $reference, 'payment_provider' => $gateway->key(), 'gateway_order_id' => null, 'gateway_orders' => $attempts]);
 
         $payment = $gateway->start(
             $registration->email,
@@ -123,10 +126,8 @@ class Registrar
             ['registration' => $registration->reference, 'membership_type' => $registration->membershipType?->name],
         );
         if ($payment['order_id']) {
-            $registration->update([
-                'gateway_order_id' => $payment['order_id'],
-                'gateway_orders' => array_merge($registration->gateway_orders ?? [], [$reference => $payment['order_id']]),
-            ]);
+            $attempts[$reference]['order_id'] = $payment['order_id'];
+            $registration->update(['gateway_order_id' => $payment['order_id'], 'gateway_orders' => $attempts]);
         }
 
         return $payment['url'];
@@ -146,11 +147,9 @@ class Registrar
             return $registration;
         }
 
-        // Checked with the provider the attempt was sent to; N-Genius looks payments up by its own order id
-        $gateway = MembershipSettings::gateway($registration->payment_provider ?: 'paystack');
-        $orderId = ($registration->gateway_orders ?? [])[$paymentReference]
-            ?? ($paymentReference === $registration->payment_reference ? $registration->gateway_order_id : null);
-        $result = $gateway->check($paymentReference, $orderId);
+        // Checked with the provider this attempt was sent to; N-Genius looks payments up by its own order id
+        $attempt = $registration->paymentAttempt($paymentReference);
+        $result = MembershipSettings::gateway($attempt['provider'])->check($paymentReference, $attempt['order_id']);
         if (! $result) {
             return $registration;
         }

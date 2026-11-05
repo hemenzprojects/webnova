@@ -40,6 +40,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Members signing in to the website's member portal (Membership plugin)
+        'member' => [
+            'driver' => 'session',
+            'provider' => 'member_accounts',
+        ],
     ],
 
     /*
@@ -63,6 +69,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'member_accounts' => [
+            'driver' => 'eloquent',
+            'model' => App\Plugins\Membership\Models\MemberAccount::class,
         ],
 
         // 'users' => [
@@ -96,6 +107,22 @@ return [
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,
+        ],
+
+        // Members' "forgot password" links (Membership plugin, MemberAccounts)
+        'member_accounts' => [
+            'provider' => 'member_accounts',
+            'table' => 'member_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // "Set your password" links in welcome emails, for accounts without a password yet
+        'member_invitations' => [
+            'provider' => 'member_accounts',
+            'table' => 'member_password_reset_tokens',
+            'expire' => 60 * 24 * 14,
+            'throttle' => 0,
         ],
     ],
 

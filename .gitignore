@@ -13,6 +13,8 @@ frontend/.env
 # Dependencies
 node_modules/
 vendor/
+# Laravel's published view overrides (mail layout) are our code, not dependencies
+!backend/resources/views/vendor/
 
 # Build output
 frontend/.output/

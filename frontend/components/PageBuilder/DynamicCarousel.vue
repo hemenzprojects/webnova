@@ -55,22 +55,7 @@
 
             <!-- Services -->
             <div v-else-if="data.contentType === 'services'" class="h-full">
-              <NuxtLink
-                :to="`/services/${item.slug}`"
-                class="block bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 h-full group"
-              >
-                <div class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary transition">
-                  {{ item.name }}
-                </h3>
-                <p v-if="item.description" class="text-gray-600 leading-relaxed">
-                  {{ truncate(item.description, 120) }}
-                </p>
-              </NuxtLink>
+              <ServiceCard :service="item" />
             </div>
 
             <!-- News -->
@@ -268,8 +253,8 @@ const getContentTypeLabel = () => {
 <style scoped>
 .dynamic-carousel :deep(.swiper-button-next),
 .dynamic-carousel :deep(.swiper-button-prev) {
-  color: v-bind('navigationColor || "#0ea5e9"');
-  background: v-bind('navigationBgColor || "white"');
+  color: v-bind('data.navigationColor || "#0ea5e9"');
+  background: v-bind('data.navigationBgColor || "white"');
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -285,7 +270,7 @@ const getContentTypeLabel = () => {
 
 .dynamic-carousel :deep(.swiper-button-next:hover),
 .dynamic-carousel :deep(.swiper-button-prev:hover) {
-  background: v-bind('navigationHoverColor || navigationColor || "#0ea5e9"');
+  background: v-bind('data.navigationHoverColor || data.navigationColor || "#0ea5e9"');
   color: white;
   transform: scale(1.1);
 }
@@ -293,13 +278,13 @@ const getContentTypeLabel = () => {
 .dynamic-carousel :deep(.swiper-pagination-bullet) {
   width: 12px;
   height: 12px;
-  background: v-bind('paginationColor || "#cbd5e1"');
+  background: v-bind('data.paginationColor || "#cbd5e1"');
   opacity: 1;
   transition: all 0.3s ease;
 }
 
 .dynamic-carousel :deep(.swiper-pagination-bullet-active) {
-  background: v-bind('paginationActiveColor || navigationColor || "#0ea5e9"');
+  background: v-bind('data.paginationActiveColor || data.navigationColor || "#0ea5e9"');
   width: 30px;
   border-radius: 6px;
 }

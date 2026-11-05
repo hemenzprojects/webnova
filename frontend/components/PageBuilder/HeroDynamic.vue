@@ -79,9 +79,9 @@
           </div>
 
           <!-- Bottom Badges -->
-          <div v-if="data.bottomBadges && data.bottomBadges.length > 0" class="flex flex-wrap gap-3 pt-4">
+          <div v-if="bottomBadges.length" class="flex flex-wrap gap-3 pt-4">
             <span
-              v-for="(badge, index) in data.bottomBadges"
+              v-for="(badge, index) in bottomBadges"
               :key="index"
               class="px-4 py-2 backdrop-blur-sm text-sm rounded-full border hover:opacity-90 transition-all"
               :style="getBottomBadgeStyle()"
@@ -299,6 +299,9 @@ const props = defineProps<{
 }>()
 
 const { transformImageUrl } = usePageBuilder()
+
+// Highlights just added in the editor and not filled in yet are skipped
+const bottomBadges = computed(() => (props.data.bottomBadges || []).filter((badge) => badge?.trim()))
 
 const backgroundImageUrl = computed(() => transformImageUrl(props.data.backgroundImage || null))
 const circleImageUrl = computed(() => transformImageUrl(props.data.circleImage || null))

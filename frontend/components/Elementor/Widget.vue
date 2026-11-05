@@ -30,8 +30,18 @@
 
     <!-- Widget Content -->
     <div class="p-2">
+      <!-- Same Style / Advanced settings as the live site -->
+      <PageBuilderBlockWrapper :styles="widget.data?._style" editor>
+      <!-- Theme override or section block rendered by name (as on the live site) -->
+      <component
+        v-if="getNamedComponent(widget.type)"
+        :is="getNamedComponent(widget.type)"
+        :data="widget.data"
+        :block-id="widget.id"
+      />
+
       <!-- Heading Widget -->
-      <div v-if="widget.type === 'heading'" :class="getAlignmentClass(widget.data.alignment)">
+      <div v-else-if="widget.type === 'heading'" :class="getAlignmentClass(widget.data.alignment)">
         <component
           :is="widget.data.tag || 'h2'"
           contenteditable="true"
@@ -58,7 +68,7 @@
       <div v-else-if="widget.type === 'image'" :class="getAlignmentClass(widget.data.alignment)">
         <img
           v-if="widget.data.url"
-          :src="widget.data.url"
+          :src="getImageUrl(widget.data.url) || ''"
           :alt="widget.data.alt"
           :style="{ width: widget.data.width ? `${widget.data.width.size}${widget.data.width.unit}` : '100%' }"
           class="max-w-full h-auto rounded"
@@ -140,6 +150,7 @@
       <div v-else class="p-4 bg-gray-100 rounded text-center">
         <span class="text-sm text-gray-600">{{ widget.type }}</span>
       </div>
+      </PageBuilderBlockWrapper>
     </div>
   </div>
 </template>
@@ -155,6 +166,8 @@ const props = defineProps<{
 const emit = defineEmits(['select', 'update', 'remove'])
 
 const { widgetLibrary } = useElementorEditor()
+const { getImageUrl } = useImageUrl()
+const { getNamedComponent } = usePageBuilder()
 const isDragging = ref(false)
 
 const handleDragStart = (e: DragEvent) => {

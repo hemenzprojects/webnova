@@ -45,11 +45,10 @@ class MenuController extends Controller
                 ->first();
         });
 
+        // No menu at this location is a normal state (the frontend falls back
+        // to its default links), so it is not reported as an error
         if (!$menu) {
-            return response()->json([
-                'error' => 'Menu not found',
-                'location' => $location
-            ], 404);
+            return response()->json(null);
         }
 
         return response()->json([

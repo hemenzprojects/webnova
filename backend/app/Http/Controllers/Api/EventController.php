@@ -20,7 +20,7 @@ class EventController extends Controller
             $query->where('is_featured', true);
         }
 
-        $events = $query->orderBy('start_date', 'asc')
+        $events = $query->orderBy('start_date', $request->get('sort') === 'latest' ? 'desc' : 'asc')
             ->select('id', 'title', 'slug', 'description', 'location', 'venue', 'featured_image', 'start_date', 'end_date', 'registration_link', 'is_featured')
             ->paginate($request->get('per_page', 10));
 

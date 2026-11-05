@@ -6,6 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Page extends Model
 {
+    public const VISIBILITY_PUBLIC = 'public';
+
+    /** Signed-in active members (Membership plugin, Member accounts feature) and admins */
+    public const VISIBILITY_MEMBERS = 'members';
+
+    public const VISIBILITIES = [
+        self::VISIBILITY_PUBLIC => 'Everyone',
+        self::VISIBILITY_MEMBERS => 'Members only',
+    ];
+
     protected $fillable = [
         'title',
         'slug',
@@ -18,6 +28,7 @@ class Page extends Model
         'meta_title',
         'meta_description',
         'is_published',
+        'visibility',
         'order',
     ];
 
@@ -26,6 +37,11 @@ class Page extends Model
         'blocks' => 'array',
         'builder_settings' => 'array',
     ];
+
+    public function isMembersOnly(): bool
+    {
+        return $this->visibility === self::VISIBILITY_MEMBERS;
+    }
 
     /**
      * Check if this page uses the page builder

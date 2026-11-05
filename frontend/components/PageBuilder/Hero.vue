@@ -1,5 +1,5 @@
 <template>
-  <section :class="heightClass" class="relative overflow-hidden">
+  <section :class="heightClass" class="relative overflow-hidden flex items-center">
     <!-- Background Image -->
     <div v-if="backgroundImageUrl" class="absolute inset-0">
       <img :src="backgroundImageUrl" alt="" class="w-full h-full object-cover" />
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Content -->
-    <div class="relative z-10 container mx-auto px-4 h-full flex items-center">
+    <div class="relative z-10 container mx-auto px-4 py-24 flex items-center">
       <div class="grid md:grid-cols-2 gap-12 items-center w-full">
         <!-- Left side: Text content -->
         <div class="text-white">

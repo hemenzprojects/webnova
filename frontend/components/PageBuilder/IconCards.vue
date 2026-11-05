@@ -12,7 +12,7 @@
         <div
           v-for="(card, index) in data.cards"
           :key="index"
-          class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+          class="group hover-lift bg-white rounded-lg shadow-lg overflow-hidden"
         >
           <!-- Colored Top Border -->
           <div

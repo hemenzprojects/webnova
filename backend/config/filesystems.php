@@ -41,7 +41,10 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Relative, so files load from whichever tenant domain the admin is
+            // on. An APP_URL-based URL is cross-origin there and FileUpload
+            // previews hang on "Loading".
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

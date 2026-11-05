@@ -74,7 +74,7 @@
             <!-- Image Preview -->
             <div class="relative w-20 h-20 flex-shrink-0">
               <img
-                :src="image.url"
+                :src="getImageUrl(image.url) || ''"
                 :alt="image.alt || 'Gallery image'"
                 class="w-full h-full object-cover rounded"
                 @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo image%3C/text%3E%3C/svg%3E'"
@@ -195,6 +195,8 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+
+const { getImageUrl } = useImageUrl()
 
 const props = defineProps<{
   widget: any

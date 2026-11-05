@@ -6,18 +6,18 @@
     <button
       type="button"
       @click.stop="togglePicker"
-      class="w-full flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full min-w-0 flex items-center gap-2 px-2 py-1.5 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
-      <div
-        class="w-8 h-8 rounded border border-gray-300"
-        :style="{ backgroundColor: modelValue || '#3B82F6' }"
-      ></div>
+      <!-- Checkerboard behind the swatch shows transparency -->
+      <div class="swatch shrink-0 w-7 h-7 rounded border border-gray-300 overflow-hidden">
+        <div class="w-full h-full" :style="{ backgroundColor: modelValue || '#3B82F6' }"></div>
+      </div>
       <input
         type="text"
         :value="modelValue || '#3B82F6'"
-        @input="handleTextInput"
+        @change="handleTextInput"
         @click.stop
-        class="flex-1 outline-none text-sm font-mono uppercase"
+        class="flex-1 min-w-0 bg-transparent outline-none text-sm font-mono truncate"
         placeholder="#3B82F6"
       />
     </button>
@@ -26,8 +26,8 @@
     <div
       v-if="showPicker"
       @click.stop
-      class="absolute z-50 mt-2 p-3 bg-white rounded-lg shadow-xl border border-gray-200"
-      style="min-width: 250px;"
+      class="absolute z-50 left-0 mt-2 p-3 bg-white rounded-lg shadow-xl border border-gray-200"
+      style="width: 250px; max-width: calc(100vw - 2rem);"
     >
       <!-- Gradient Selector -->
       <div class="relative w-full h-40 mb-3 rounded cursor-crosshair" @mousedown="startGradientDrag">
@@ -78,12 +78,12 @@
 
       <!-- Hex Input -->
       <div class="flex items-center gap-2">
-        <span class="text-xs font-medium text-gray-600">HEX:</span>
+        <span class="text-xs font-medium text-gray-600">Colour</span>
         <input
           type="text"
           :value="modelValue || '#3B82F6'"
-          @input="handleTextInput"
-          class="flex-1 px-2 py-1 text-xs font-mono uppercase border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          @change="handleTextInput"
+          class="flex-1 min-w-0 px-2 py-1 text-xs font-mono border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="#3B82F6"
         />
       </div>
@@ -124,7 +124,8 @@ const currentHue = computed(() => {
 
 // Initialize from props
 watch(() => props.modelValue, (newVal) => {
-  if (newVal && newVal.startsWith('#')) {
+  // Only six-digit hex drives the markers; rgba(...) and names keep the last position
+  if (newVal && /^#[0-9A-Fa-f]{6}$/.test(newVal)) {
     hexToHSB(newVal)
   }
 }, { immediate: true })
@@ -227,11 +228,18 @@ function selectPreset(color: string) {
   hexToHSB(color)
 }
 
+// Typed colours: hex, or anything else CSS accepts (rgba(...) for see-through colours, names, ...)
 function handleTextInput(e: Event) {
-  const value = (e.target as HTMLInputElement).value
+  let value = (e.target as HTMLInputElement).value.trim()
+  // Short hex (#fff) becomes #FFFFFF
+  if (/^#[0-9A-Fa-f]{3}$/.test(value)) {
+    value = '#' + value.slice(1).split('').map((c) => c + c).join('')
+  }
   if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
     emit('update:modelValue', value.toUpperCase())
     hexToHSB(value)
+  } else if (value && typeof CSS !== 'undefined' && CSS.supports('color', value)) {
+    emit('update:modelValue', value)
   }
 }
 
@@ -256,5 +264,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Additional custom styles if needed */
+.swatch {
+  background: repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 8px 8px;
+}
 </style>

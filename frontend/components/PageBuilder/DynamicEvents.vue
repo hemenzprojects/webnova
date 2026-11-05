@@ -10,7 +10,7 @@
           v-for="event in data.items"
           :key="event.id"
           :to="`/events/${event.slug}`"
-          class="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 group"
+          class="group hover-lift bg-white border border-gray-200 rounded-2xl overflow-hidden"
         >
           <div v-if="event.featured_image" class="aspect-video w-full overflow-hidden bg-gray-100">
             <img
@@ -53,7 +53,7 @@
           v-for="event in data.items"
           :key="event.id"
           :to="`/events/${event.slug}`"
-          class="flex gap-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 p-6 group"
+          class="group hover-lift flex gap-6 bg-white border border-gray-200 rounded-xl p-6"
         >
           <div class="flex-1">
             <div class="flex items-center gap-2 text-sm text-accent font-semibold mb-2">
@@ -105,7 +105,9 @@ const formatDate = (date: string) => {
   })
 }
 
-const truncate = (text: string, length: number) => {
+const truncate = (html: string, length: number) => {
+  // Descriptions come from a rich-text editor; show them as plain text here
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   if (text.length <= length) return text
   return text.substring(0, length) + '...'
 }

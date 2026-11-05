@@ -3,14 +3,14 @@
     <div class="container mx-auto px-4">
       <PageBuilderSectionIntro :eyebrow="data.eyebrow" :heading="data.heading" :text="data.subheading" />
 
-      <div v-if="items.length" class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div v-if="items.length" v-reveal-stagger class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         <article
           v-for="post in items"
           :key="post.id"
-          class="flex flex-col overflow-hidden"
+          class="group hover-lift flex flex-col overflow-hidden"
           :style="{ backgroundColor: 'var(--color-surface-muted, #F4F0FE)', borderRadius: 'var(--radius-card)' }"
         >
-          <NuxtLink :to="`/news/${post.slug}`" class="block">
+          <NuxtLink :to="`/news/${post.slug}`" class="hover-zoom block">
             <img
               v-if="post.featured_image"
               :src="getImageUrl(post.featured_image)"
@@ -32,7 +32,7 @@
             <NuxtLink
               v-if="data.showReadMore !== false"
               :to="`/news/${post.slug}`"
-              class="mt-auto self-start px-5 py-2 text-sm font-semibold text-white bg-primary-light hover:bg-primary transition"
+              class="btn-theme btn-shine mt-auto self-start px-5 py-2 text-sm font-semibold"
               :style="{ borderRadius: 'var(--radius-button)' }"
             >
               {{ data.readMoreText || 'See more' }}

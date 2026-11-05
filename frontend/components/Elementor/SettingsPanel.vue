@@ -606,6 +606,36 @@
               type="hero"
             />
 
+            <!-- More background photos: the background becomes a slideshow; the text, photo and stats stay put -->
+            <div class="rounded-lg border border-gray-200 p-3 space-y-3">
+              <div>
+                <p class="text-sm font-medium text-gray-700">Background slideshow</p>
+                <p class="text-xs text-gray-500">Add more photos and the background changes from one to the next. The text, button, photo and stats stay in place.</p>
+              </div>
+              <div v-for="(slide, index) in (elementData.backgroundSlides || [])" :key="index" class="relative">
+                <ElementorImageUpload
+                  :model-value="slide || ''"
+                  @update:model-value="updateBackgroundSlide(index, $event)"
+                  :label="`Photo ${index + 2}`"
+                  type="hero"
+                />
+                <button type="button" class="absolute top-0 right-0 text-xs text-red-600 hover:underline" @click="removeBackgroundSlide(index)">Remove</button>
+              </div>
+              <button type="button" class="w-full px-3 py-2 text-sm border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600" @click="addBackgroundSlide">
+                + Add a photo
+              </button>
+              <div v-if="(elementData.backgroundSlides || []).length">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Show each photo for</label>
+                <select
+                  :value="String(elementData.slideInterval || 6)"
+                  @change="updateData('slideInterval', Number(($event.target as HTMLSelectElement).value))"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option v-for="seconds in [4, 6, 8, 10, 12]" :key="seconds" :value="String(seconds)">{{ seconds }} seconds</option>
+                </select>
+              </div>
+            </div>
+
             <!-- Foreground Image -->
             <ElementorImageUpload
               :model-value="elementData.foregroundImage || ''"
@@ -2663,6 +2693,16 @@ const updateSetting = (key: string, value: any) => {
 const updateData = (key: string, value: any) => {
   emit('update', { [key]: value })
 }
+
+// Hero: extra background photos for the slideshow
+const addBackgroundSlide = () => updateData('backgroundSlides', [...(elementData.value.backgroundSlides || []), ''])
+const updateBackgroundSlide = (index: number, value: string) => {
+  const slides = [...(elementData.value.backgroundSlides || [])]
+  slides[index] = value
+  updateData('backgroundSlides', slides)
+}
+const removeBackgroundSlide = (index: number) =>
+  updateData('backgroundSlides', (elementData.value.backgroundSlides || []).filter((_: string, i: number) => i !== index))
 
 const updatePadding = (side: string, value: string) => {
   const padding = { ...elementData.value.padding }

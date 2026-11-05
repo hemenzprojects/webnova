@@ -29,14 +29,14 @@
         No updates yet.
       </p>
 
-      <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-10">
+      <div v-else v-reveal-stagger class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-10">
         <article
           v-for="item in items"
           :key="item.id"
-          class="flex flex-col overflow-hidden border"
+          class="group hover-lift flex flex-col overflow-hidden border"
           :style="{ borderRadius: 'var(--radius-card, 12px)', borderColor: 'var(--color-border, #e5e7eb)', backgroundColor: 'var(--color-surface, #fff)' }"
         >
-          <component :is="item.link ? 'a' : 'div'" v-bind="item.link ? linkAttrs(item.link) : {}" class="block aspect-[16/10] overflow-hidden" :style="{ backgroundColor: 'var(--color-surface-muted, #f3f4f6)' }">
+          <component :is="item.link ? 'a' : 'div'" v-bind="item.link ? linkAttrs(item.link) : {}" class="hover-zoom block aspect-[16/10]" :style="{ backgroundColor: 'var(--color-surface-muted, #f3f4f6)' }">
             <img v-if="item.image" :src="getImageUrl(item.image)" :alt="item.title" class="w-full h-full object-cover" loading="lazy">
             <div v-else class="w-full h-full flex items-center justify-center">
               <ThemeIcon :name="item.kind === 'publication' ? 'book-open' : item.kind === 'milestone' ? 'trophy' : 'light-bulb'" class="w-12 h-12 text-primary opacity-60" />
@@ -58,7 +58,7 @@
                   {{ [item.author_detail, formatDate(item.published_at)].filter(Boolean).join(' · ') }}
                 </p>
               </div>
-              <a v-if="item.link" v-bind="linkAttrs(item.link)" class="shrink-0 font-medium text-primary hover:underline">Read more &rarr;</a>
+              <a v-if="item.link" v-bind="linkAttrs(item.link)" class="arrow-nudge shrink-0 inline-flex items-center gap-1 font-medium text-primary">Read more <ThemeIcon name="arrow-right" class="w-4 h-4" /></a>
             </div>
           </div>
         </article>

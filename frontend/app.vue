@@ -14,6 +14,7 @@
       <NuxtPage />
     </main>
     <TheFooter :branding="branding" />
+    <ClientOnly><ScrollExtras /></ClientOnly>
   </div>
 </template>
 

@@ -1,0 +1,147 @@
+/*
+ * Motion and hover effects for the public site (all themes). Colours come from
+ * the theme's CSS variables. Visitors who ask their device for reduced motion
+ * get the calm version (bottom of this file).
+ */
+
+/* ── Scroll reveal (plugins/reveal.client.ts: v-reveal, v-reveal-stagger) ── */
+.reveal-ready {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-ready[data-reveal='zoom'] { transform: scale(0.95); }
+.reveal-ready[data-reveal='left'] { transform: translateX(-32px); }
+.reveal-ready[data-reveal='right'] { transform: translateX(32px); }
+.reveal-ready.reveal-in { opacity: 1; transform: none; }
+
+/* ── Cards: lift, image zoom ── */
+.hover-lift {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 45px -22px color-mix(in srgb, var(--color-primary, #4f46e5) 45%, rgb(0 0 0 / 0.35));
+}
+.hover-zoom { overflow: hidden; }
+.hover-zoom img { transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.group:hover .hover-zoom img,
+.hover-zoom:hover img { transform: scale(1.07); }
+
+/* ── Buttons: their own colour (Style → Buttons, Button text), else the accent colour ── */
+:root { --color-button-text: #ffffff; }
+.btn-theme {
+  background-color: var(--color-button, var(--color-primary, #4f46e5));
+  color: var(--color-button-text, #fff);
+}
+.btn-theme:hover { filter: brightness(1.08); }
+
+/* ── Buttons: a light sweep and a nudge ── */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, background-color 0.25s ease;
+}
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.75s ease;
+}
+.btn-shine:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--color-primary, #4f46e5) 80%, transparent); }
+.btn-shine:hover::after { transform: translateX(120%); }
+.arrow-nudge svg { transition: transform 0.3s ease; }
+.arrow-nudge:hover svg,
+.group:hover .arrow-nudge svg { transform: translateX(4px); }
+
+/* ── Header (TheNavigation): shadow when scrolled, hidden while scrolling down ── */
+.site-header { transition: box-shadow 0.3s ease, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.site-header.is-scrolled { box-shadow: 0 10px 30px -15px rgb(0 0 0 / 0.3); }
+.site-header.is-hidden { transform: translateY(-100%); }
+.site-header .nav-row { transition: padding 0.3s ease; }
+.site-header .nav-logo { transition: height 0.3s ease; }
+
+/* Menu links: an underline that grows from the middle */
+.nav-underline { position: relative; }
+.nav-underline::after {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary, currentColor);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+.nav-underline:hover::after,
+.nav-underline.is-active::after { transform: scaleX(1); }
+
+/* Drop-down menus fade and slide in */
+.nav-dropdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.group:hover > .nav-dropdown,
+.group:focus-within > .nav-dropdown { opacity: 1; visibility: visible; transform: none; }
+
+/* ── Hero: text rises in, photo zooms slowly, badge floats ── */
+@keyframes motion-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+.hero-rise > * { animation: motion-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hero-rise > *:nth-child(2) { animation-delay: 0.12s; }
+.hero-rise > *:nth-child(3) { animation-delay: 0.24s; }
+.hero-rise > *:nth-child(4) { animation-delay: 0.36s; }
+/* The hero's photo glides in slowly from the right, its badge after it */
+@keyframes motion-slide-in-right { from { opacity: 0; transform: translateX(140px); } to { opacity: 1; transform: none; } }
+.hero-slide-in { animation: motion-slide-in-right 2.8s cubic-bezier(0.25, 0.8, 0.35, 1) 0.3s both; }
+.hero-slide-in-late { animation: motion-slide-in-right 2.4s cubic-bezier(0.25, 0.8, 0.35, 1) 1.6s both; }
+@keyframes motion-zoom-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+.hero-zoom-in { animation: motion-zoom-in 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both; }
+@keyframes motion-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+.float-slow { animation: motion-float 6s ease-in-out infinite; }
+@keyframes motion-ken-burns { from { transform: scale(1); } to { transform: scale(1.12); } }
+.ken-burns { animation: motion-ken-burns 22s ease-out infinite alternate; }
+
+/* Soft colour blobs drifting behind a section */
+@keyframes motion-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -20px) scale(1.08); } }
+.blob { position: absolute; border-radius: 9999px; filter: blur(50px); opacity: 0.35; pointer-events: none; animation: motion-drift 14s ease-in-out infinite; }
+
+/* ── Logo strip: endless scroll, grey to colour ── */
+@keyframes motion-marquee { to { transform: translateX(-50%); } }
+.marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track { display: flex; width: max-content; animation: motion-marquee var(--marquee-duration, 30s) linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.logo-tint img { filter: grayscale(1); opacity: 0.7; transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease; }
+.logo-tint:hover img { filter: none; opacity: 1; transform: scale(1.06); }
+
+/* ── Accordion (FAQ): smooth height ── */
+.accordion-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.35s ease; }
+.accordion-panel.is-open { grid-template-rows: 1fr; }
+.accordion-panel > div { overflow: hidden; }
+
+/* ── Testimonials slider dots in the theme colour ── */
+.testimonial-swiper { --swiper-pagination-color: var(--color-primary, #4f46e5); --swiper-pagination-bullet-inactive-opacity: 0.25; padding-bottom: 3rem !important; }
+.testimonial-swiper .swiper-slide { height: auto; }
+
+/* ── Reduced motion: no movement, everything shown ── */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .hero-rise > *, .hero-zoom-in, .hero-slide-in, .hero-slide-in-late, .float-slow, .ken-burns, .blob { animation: none !important; }
+  .marquee { -webkit-mask-image: none; mask-image: none; }
+  .marquee-track { animation: none; flex-wrap: wrap; justify-content: center; width: auto; }
+  .marquee-copy { display: none; }
+  .hover-lift:hover, .btn-shine:hover { transform: none; }
+  .hover-zoom img { transition: none; }
+  .site-header.is-hidden { transform: none; }
+}

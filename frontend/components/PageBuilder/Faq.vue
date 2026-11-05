@@ -5,6 +5,7 @@
         v-if="imageUrl"
         :src="imageUrl"
         alt=""
+        v-reveal="'left'"
         class="w-full aspect-[4/3.4] object-cover"
         :style="{ borderRadius: 'var(--radius-card, 12px)' }"
         loading="lazy"
@@ -13,11 +14,11 @@
       <div :class="imageUrl ? '' : 'lg:col-span-2 max-w-3xl mx-auto w-full'">
         <PageBuilderSectionIntro :eyebrow="data.eyebrow" :heading="data.heading" :text="data.text" :align="imageUrl ? 'left' : 'center'" />
 
-        <div class="mt-8 space-y-3">
+        <div v-reveal-stagger class="mt-8 space-y-3">
           <div
             v-for="(item, i) in data.items"
             :key="i"
-            class="overflow-hidden border transition"
+            class="overflow-hidden border transition-colors duration-300 hover:border-primary"
             :style="{
               borderRadius: 'var(--radius-button, 8px)',
               borderColor: open === i ? 'var(--color-primary)' : 'var(--color-surface-strong, #e5e7eb)',
@@ -35,8 +36,13 @@
               <span>{{ item.question }}</span>
               <svg class="w-5 h-5 shrink-0 transition-transform" :class="open === i ? 'rotate-45' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14" /></svg>
             </button>
-            <div v-show="open === i" class="px-5 py-4 leading-relaxed" :style="{ color: 'var(--color-text-muted)' }">
-              {{ item.answer }}
+            <!-- Slides open and shut (assets/css/motion.css) -->
+            <div class="accordion-panel" :class="{ 'is-open': open === i }">
+              <div>
+                <div class="px-5 py-4 leading-relaxed" :style="{ color: 'var(--color-text-muted)' }">
+                  {{ item.answer }}
+                </div>
+              </div>
             </div>
           </div>
         </div>

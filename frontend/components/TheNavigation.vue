@@ -1,7 +1,7 @@
 <template>
   <!-- The design is chosen in the admin under Customize → Header Settings -->
   <header
-    :class="['site-header shadow-sm z-50', header.sticky ? 'sticky top-0' : 'relative']"
+    :class="['site-header shadow-sm z-50', header.sticky ? 'sticky top-0' : 'relative', { 'is-scrolled': scrolled, 'is-hidden': hidden && !mobileMenuOpen }]"
     :style="{ backgroundColor: branding?.header_bg_color || 'var(--color-header-bg, #ffffff)' }"
   >
     <!-- Top bar design: coloured strip with social icons and contact details -->
@@ -39,10 +39,10 @@
     </div>
 
     <nav class="container mx-auto px-4">
-      <div class="flex items-center justify-between py-4">
+      <div class="nav-row flex items-center justify-between" :class="scrolled ? 'py-2.5' : 'py-4'">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center space-x-2">
-          <div v-if="logoUrl" class="h-12 flex items-center">
+          <div v-if="logoUrl" class="nav-logo flex items-center" :class="scrolled ? 'h-10' : 'h-12'">
             <img :src="logoUrl" :alt="siteName" class="h-full w-auto object-contain" />
           </div>
           <div v-else class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
@@ -217,6 +217,29 @@ const props = defineProps({
 })
 
 const mobileMenuOpen = ref(false)
+
+// Shrinks a little with a shadow once the page scrolls; a sticky header slides away while
+// scrolling down and comes back on the way up (styles in assets/css/motion.css)
+const scrolled = ref(false)
+const hidden = ref(false)
+if (process.client) {
+  let lastY = 0
+  let ticking = false
+  const onScroll = () => {
+    if (ticking) return
+    ticking = true
+    requestAnimationFrame(() => {
+      const y = window.scrollY
+      scrolled.value = y > 12
+      hidden.value = header.value.sticky && y > 320 && y > lastY + 2
+      if (y < lastY - 2 || y < 320) hidden.value = false
+      lastY = y
+      ticking = false
+    })
+  }
+  onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+  onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+}
 
 // Used until a design is saved in the admin, or if the settings cannot be loaded
 const defaultHeader: HeaderConfig = { layout: 'classic', sticky: true, cta: null, phone: null, email: null, social: [] }

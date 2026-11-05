@@ -29,7 +29,7 @@
           <SmartLink
             v-if="data.primaryButton?.text"
             :to="data.primaryButton.url"
-            class="px-7 py-3 font-semibold text-white bg-primary hover:opacity-90 transition"
+            class="btn-theme btn-shine px-7 py-3 font-semibold"
             :style="{ borderRadius: 'var(--radius-button, 8px)' }"
           >
             {{ data.primaryButton.text }}

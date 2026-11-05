@@ -14,11 +14,11 @@
         <div
           v-for="(item, index) in data.items"
           :key="`stat-${index}`"
-          class="group p-8 rounded-2xl backdrop-blur backdrop-filter bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-300"
+          class="group hover-lift p-8 rounded-2xl backdrop-blur backdrop-filter bg-white/10 border border-white/20 hover:bg-white/20"
         >
           <div class="text-center">
             <div class="text-5xl md:text-6xl font-bold mb-2">
-              <span v-if="data.animate" ref="counterRefs">{{ item.value }}</span>
+              <CountUp v-if="data.animate !== false" :value="item.value" />
               <span v-else>{{ item.value }}</span>
               <span v-if="item.suffix" class="text-accent">{{ item.suffix }}</span>
             </div>
@@ -66,11 +66,6 @@ onMounted(() => {
     top: `${Math.random() * 100}%`,
     animationDelay: `${Math.random() * 6}s`,
   }))
-
-  if (props.data.animate) {
-    // Counter animation logic would go here
-    // For simplicity, we're just displaying the values
-  }
 })
 </script>
 

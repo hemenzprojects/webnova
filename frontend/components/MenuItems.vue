@@ -78,7 +78,7 @@ const hasChildren = (item: MenuItem) => item.children && item.children.length > 
 <template>
   <!-- Desktop Mode: Horizontal with hover dropdowns -->
   <template v-if="mode === 'desktop'">
-    <ul :class="depth === 0 ? 'flex items-center space-x-1' : 'absolute left-0 top-full mt-2 min-w-[200px] bg-white shadow-lg rounded-md py-2 hidden group-hover:block z-50'">
+    <ul :class="depth === 0 ? 'flex items-center space-x-1' : 'nav-dropdown absolute left-0 top-full mt-2 min-w-[200px] bg-white shadow-lg rounded-md py-2 z-50'">
       <li
         v-for="item in items"
         :key="item.id"
@@ -95,9 +95,10 @@ const hasChildren = (item: MenuItem) => item.children && item.children.length > 
             depth === 0
               ? (variant === 'dark'
                 ? 'text-white font-medium rounded-md hover:bg-white/10'
-                : 'text-gray-700 hover:text-primary-600 font-medium rounded-md hover:bg-gray-50')
+                : 'nav-underline text-gray-700 hover:text-primary-600 font-medium rounded-md')
               : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600',
             isActive(item) ? 'text-primary-600 font-semibold' : '',
+            depth === 0 && variant !== 'dark' && isActive(item) ? 'is-active' : '',
             hasActiveDescendant(item) && !isActive(item) ? 'text-primary-500' : '',
             item.type === 'category'
               ? (depth === 0 && variant === 'dark' ? 'font-semibold cursor-default' : 'font-semibold text-gray-900 cursor-default')

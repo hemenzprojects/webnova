@@ -3,14 +3,14 @@
     <div class="container mx-auto px-4">
       <PageBuilderSectionIntro :eyebrow="data.eyebrow" :heading="data.heading" :text="data.subheading" />
 
-      <div v-if="items.length" class="mt-12 grid sm:grid-cols-2 gap-6" :class="columnClass">
+      <div v-if="items.length" v-reveal-stagger class="mt-12 grid sm:grid-cols-2 gap-6" :class="columnClass">
         <article
           v-for="course in items"
           :key="course.id"
-          class="flex flex-col p-6"
+          class="group hover-lift flex flex-col p-6"
           :style="{ backgroundColor: 'var(--color-surface-muted, #F4F0FE)', borderRadius: 'var(--radius-card)' }"
         >
-          <NuxtLink :to="`/services/${course.slug}`" class="block mb-6">
+          <NuxtLink :to="`/services/${course.slug}`" class="hover-zoom block mb-6" :style="{ borderRadius: 'var(--radius-button)' }">
             <img
               v-if="course.featured_image"
               :src="getImageUrl(course.featured_image)"
@@ -44,7 +44,7 @@
           <NuxtLink
             v-if="data.showReadMore !== false"
             :to="`/services/${course.slug}`"
-            class="mt-auto flex items-center justify-center gap-2 py-2.5 font-semibold text-white bg-primary hover:opacity-90 transition"
+            class="btn-theme btn-shine arrow-nudge mt-auto flex items-center justify-center gap-2 py-2.5 font-semibold"
             :style="{ borderRadius: 'var(--radius-button)' }"
           >
             {{ data.readMoreText || 'View Details' }}

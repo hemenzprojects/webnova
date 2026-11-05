@@ -15,7 +15,7 @@
           v-for="item in data.items"
           :key="item.id"
           :to="`/news/${item.slug}`"
-          class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden flex flex-col"
+          class="group hover-lift bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col"
         >
           <div v-if="data.showImage && item.featured_image" class="aspect-video w-full overflow-hidden bg-gray-100">
             <img
@@ -57,7 +57,7 @@
           v-for="item in data.items"
           :key="item.id"
           :to="`/news/${item.slug}`"
-          class="flex gap-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 group"
+          class="group hover-lift flex gap-6 bg-white rounded-xl shadow-sm p-6"
         >
           <div v-if="data.showImage && item.featured_image" class="w-48 h-32 flex-shrink-0">
             <img

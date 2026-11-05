@@ -114,7 +114,7 @@
           <button
             type="submit"
             :disabled="submitting"
-            class="px-4 py-2 font-medium text-white bg-primary hover:opacity-90 transition disabled:opacity-60"
+            class="btn-theme btn-shine px-4 py-2 font-medium disabled:opacity-60"
             :style="{ borderRadius: 'var(--radius-button, 0)' }"
           >
             {{ submitting ? 'Please wait…' : 'Proceed to make donation' }}

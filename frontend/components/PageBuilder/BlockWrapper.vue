@@ -1,5 +1,5 @@
 <template>
-  <div :id="styles?.anchorId || undefined" :class="css.classes" :style="css.style" class="relative">
+  <div v-reveal="!editor" :id="styles?.anchorId || undefined" :class="css.classes" :style="css.style" class="relative">
     <!-- In the editor, hidden-on-device widgets stay visible with a note -->
     <span
       v-if="editor && hiddenOn.length"

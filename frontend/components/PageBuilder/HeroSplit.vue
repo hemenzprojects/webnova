@@ -39,7 +39,7 @@
             <NuxtLink
               v-if="data.primaryCtaText && data.primaryCtaLink"
               :to="data.primaryCtaLink"
-              class="px-8 py-3 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition-colors duration-300 shadow-lg hover:shadow-xl"
+              class="btn-theme btn-shine px-8 py-3 font-semibold rounded-md shadow-lg"
             >
               {{ data.primaryCtaText }}
             </NuxtLink>

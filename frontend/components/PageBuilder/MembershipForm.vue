@@ -155,7 +155,7 @@
           <button
             type="submit"
             :disabled="submitting"
-            class="inline-flex items-center gap-2 px-5 py-2.5 font-medium text-white bg-primary hover:opacity-90 transition disabled:opacity-60"
+            class="btn-theme btn-shine inline-flex items-center gap-2 px-5 py-2.5 font-medium disabled:opacity-60"
             :style="{ borderRadius: 'var(--radius-button, 8px)' }"
           >
             {{ submitting ? 'Please wait…' : form.submit_text }}

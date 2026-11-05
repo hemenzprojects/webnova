@@ -9,6 +9,9 @@ export interface BlockStyle {
     heading?: string
     text?: string
     accent?: string
+    /** Buttons' background and text; empty: the accent colour, with white text */
+    button?: string
+    buttonText?: string
     background?: string
     card?: string
   }
@@ -78,6 +81,8 @@ export const blockStyleToCss = (style: BlockStyle | undefined, forEditor = false
   set('--color-text-muted', s.colors?.text)
   set('--color-primary', s.colors?.accent)
   set('--color-accent', s.colors?.accent)
+  set('--color-button', s.colors?.button)
+  set('--color-button-text', s.colors?.buttonText)
   set('--color-surface', s.colors?.background)
   // Blocks with their own coloured band (e.g. a hero) paint it with --block-bg
   set('--block-bg', s.colors?.background || s.background?.color)

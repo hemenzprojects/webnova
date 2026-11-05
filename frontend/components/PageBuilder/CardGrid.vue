@@ -13,7 +13,7 @@
           :href="card.link || undefined"
           :target="card.link ? '_blank' : undefined"
           :rel="card.link ? 'noopener noreferrer' : undefined"
-          class="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
+          class="group hover-lift bg-white border border-gray-200 rounded-2xl overflow-hidden"
           :class="{ 'cursor-pointer': card.link }"
         >
           <div v-if="card.image" class="aspect-video w-full overflow-hidden bg-gray-100">

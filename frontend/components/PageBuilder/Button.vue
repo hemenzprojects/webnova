@@ -47,7 +47,7 @@ const buttonClass = computed(() => {
   }
 
   const styleMap: Record<string, string> = {
-    primary: 'bg-primary text-white hover:bg-primary-light',
+    primary: 'btn-theme btn-shine',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700',
     accent: 'bg-accent text-white hover:bg-accent-light',
     outline: 'border-2 border-primary text-primary hover:bg-primary hover:text-white',

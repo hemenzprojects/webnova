@@ -6,7 +6,9 @@
         <legend class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Colours</legend>
         <ElementorThemeColorField label="Headings" theme-var="--color-text" :model-value="style.colors?.heading" @update:model-value="set('colors.heading', $event)" />
         <ElementorThemeColorField label="Text" theme-var="--color-text-muted" :model-value="style.colors?.text" @update:model-value="set('colors.text', $event)" />
-        <ElementorThemeColorField label="Buttons & accents" theme-var="--color-primary" :model-value="style.colors?.accent" @update:model-value="set('colors.accent', $event)" />
+        <ElementorThemeColorField label="Accents (labels, icons)" theme-var="--color-primary" :model-value="style.colors?.accent" @update:model-value="set('colors.accent', $event)" />
+        <ElementorThemeColorField label="Buttons" theme-var="--color-primary" :model-value="style.colors?.button" @update:model-value="set('colors.button', $event)" />
+        <ElementorThemeColorField label="Button text" theme-var="--color-button-text" :model-value="style.colors?.buttonText" @update:model-value="set('colors.buttonText', $event)" />
         <ElementorThemeColorField label="Background" theme-var="--color-surface" :model-value="style.colors?.background" @update:model-value="set('colors.background', $event)" />
         <ElementorThemeColorField label="Cards & panels" theme-var="--color-surface-muted" :model-value="style.colors?.card" @update:model-value="set('colors.card', $event)" />
       </fieldset>

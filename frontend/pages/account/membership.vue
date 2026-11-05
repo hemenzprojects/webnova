@@ -24,10 +24,12 @@ const rows = computed(() => [
   { label: 'Category', value: member.value?.membership_type },
   { label: 'Status', badge: true },
   { label: 'Member since', value: formatDate(member.value?.member_since) },
-  {
-    label: `Membership ${member.value?.current_year}`,
-    value: member.value?.paid_year && member.value.paid_year >= member.value.current_year ? 'Paid' : 'Not paid yet',
-  },
+  member.value?.standing
+    ? { label: 'Membership fee', value: `${member.value.standing.label}. ${member.value.standing.message}` }
+    : {
+        label: `Membership ${member.value?.current_year}`,
+        value: member.value?.paid_year && member.value.paid_year >= member.value.current_year ? 'Paid' : 'Not paid yet',
+      },
   { label: 'Sign-in email', value: member.value?.email },
 ])
 </script>

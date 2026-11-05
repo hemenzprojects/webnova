@@ -64,12 +64,18 @@ class MembershipDashboard extends Dashboard
 
     public function getWidgets(): array
     {
-        return [
+        // Members, retention and corporate figures, and where members are: with the member portal on
+        $portal = app(\App\Plugins\Membership\Support\MemberAccounts::class)->enabled();
+
+        return array_values(array_filter([
+            $portal ? Widgets\MemberStats::class : null,
             Widgets\MembershipStats::class,
             Widgets\RegistrationsChart::class,
             Widgets\RegistrationsByType::class,
+            // One row: where members are (a third) and the latest registrations (two thirds)
+            $portal ? Widgets\MembersByCountry::class : null,
             Widgets\LatestRegistrations::class,
-        ];
+        ]));
     }
 
     public function getColumns(): int|string|array

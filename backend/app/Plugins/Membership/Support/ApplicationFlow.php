@@ -43,6 +43,9 @@ class ApplicationFlow
                 $payment->forceFill(['emailed_at' => now()])->save();
             }
         }
+        if ($account && Renewals::enabled()) {
+            Renewals::refresh($account);
+        }
 
         if ($becameApproved) {
             $link = $account && ! $account->hasPassword() ? $this->accounts->invitationLink($account) : null;

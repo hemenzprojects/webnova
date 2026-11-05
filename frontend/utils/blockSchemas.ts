@@ -48,6 +48,23 @@ export const BLOCK_SCHEMAS: Record<string, BlockField[]> = {
     { key: 'heading', label: 'Heading (optional)', type: 'text', help: 'The fields themselves are set in the admin under Membership → Registration form' },
     { key: 'text', label: 'Intro text (optional)', type: 'textarea' },
   ],
+  member_updates: [
+    ...intro,
+    {
+      key: 'kind', label: 'Show', type: 'select',
+      help: 'Members submit these in the member portal; the editorial team publishes them under Membership → Member updates',
+      options: [
+        { value: '', label: 'All updates' },
+        { value: 'publication', label: 'Publications only' },
+        { value: 'milestone', label: 'Milestones and awards only' },
+        { value: 'news', label: 'News and updates only' },
+      ],
+    },
+    { key: 'limit', label: 'How many at a time', type: 'select', options: ['3', '6', '9', '12'].map((v) => ({ value: v, label: v })) },
+    { key: 'featuredFirst', label: 'Featured updates first', type: 'select', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No, newest first' }] },
+    { key: 'showFilters', label: 'Buttons to filter by type', type: 'select', options: [{ value: 'yes', label: 'Show' }, { value: 'no', label: 'Hide' }] },
+    { key: 'background', label: 'Background', type: 'select', options: [{ value: 'plain', label: 'Plain' }, { value: 'tinted', label: 'Tinted' }] },
+  ],
   donation_form: [
     { key: 'heading', label: 'Heading (optional)', type: 'text', help: 'Currencies, titles and the smallest amount are set in the admin under Donations → Settings' },
     { key: 'text', label: 'Intro text (optional)', type: 'textarea' },

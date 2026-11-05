@@ -80,6 +80,20 @@ class MemberAccountResource extends Resource
                             ? 'Set by the member'
                             : ($record?->invited_at ? 'Not set yet. Welcome email sent ' . $record->invited_at->diffForHumans() . '.' : 'Not set yet.'))
                         ->hiddenOn('create'),
+                    // Renewals: where they stand with this year's fee, and whose seat they hold
+                    Forms\Components\Placeholder::make('standing_now')
+                        ->label('Membership fee')
+                        ->content(fn (?MemberAccount $record) => $record ? \App\Plugins\Membership\Support\Renewals::standing($record)->label() . '. ' . \App\Plugins\Membership\Support\Renewals::standing($record)->message() : '')
+                        ->visible(fn (?MemberAccount $record) => $record && \App\Plugins\Membership\Support\Renewals::enabled())
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('sponsor_account_id')
+                        ->label('Seat of (corporate member)')
+                        ->relationship('sponsor', 'name', fn ($query, ?MemberAccount $record) => $query->where('id', '!=', $record?->id)->whereHas('membershipType', fn ($q) => $q->where('included_seats', '>', 0)))
+                        ->searchable()
+                        ->preload()
+                        ->helperText('A seat is covered by the corporate member\'s fee: no fee of their own, and no renewal notices.')
+                        ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled())
+                        ->hiddenOn('create'),
                     Forms\Components\Toggle::make('send_welcome')
                         ->label('Email the member a link to set their password')
                         ->default(true)
@@ -124,6 +138,16 @@ class MemberAccountResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state) => MemberAccount::STATUSES[$state] ?? $state)
                     ->color(fn (string $state) => $state === 'active' ? 'success' : 'danger'),
+                // Stored by the daily renewals job and on payment; the member's page shows it live
+                Tables\Columns\TextColumn::make('standing')
+                    ->label('Fee')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => \App\Plugins\Membership\Support\Standing::LABELS[$state] ?? '—')
+                    ->color(fn (?string $state) => match ($state) {
+                        'paid', 'exempt' => 'success', 'due' => 'gray', 'overdue' => 'warning', 'suspended', 'forfeited' => 'danger', default => 'gray',
+                    })
+                    ->description(fn (MemberAccount $record) => $record->sponsor_account_id ? 'Seat of ' . $record->sponsor?->name : null)
+                    ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled()),
                 Tables\Columns\IconColumn::make('password')
                     ->label('Signed up')
                     ->state(fn (MemberAccount $record) => $record->hasPassword())
@@ -134,6 +158,9 @@ class MemberAccountResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(MemberAccount::STATUSES),
+                Tables\Filters\SelectFilter::make('standing')->label('Membership fee')
+                    ->options(\App\Plugins\Membership\Support\Standing::LABELS)
+                    ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled()),
                 Tables\Filters\SelectFilter::make('membership_type_id')->label('Membership type')
                     ->options(fn () => MembershipType::orderBy('order')->pluck('name', 'id')),
             ])
@@ -210,6 +237,10 @@ class MemberAccountResource extends Resource
     {
         return [
             MemberAccountResource\RelationManagers\PaymentsRelationManager::class,
+            ...(\App\Plugins\Membership\Support\Renewals::enabled() ? [
+                MemberAccountResource\RelationManagers\SeatsRelationManager::class,
+                MemberAccountResource\RelationManagers\NoticesRelationManager::class,
+            ] : []),
             ...(app(\App\Plugins\PluginManager::class)->featureIsActive('membership', \App\Plugins\Membership\MembershipPlugin::FEATURE_DOCUMENTS)
                 ? [MemberAccountResource\RelationManagers\DocumentsRelationManager::class]
                 : []),

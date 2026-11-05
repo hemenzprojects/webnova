@@ -42,6 +42,40 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('reference')->fontFamily('mono')->placeholder('—'),
                 Tables\Columns\TextColumn::make('paid_at')->label('Paid on')->dateTime('j M Y'),
             ])
+            ->headerActions([
+                // Renewals paid by bank transfer, cash… (online ones are recorded automatically)
+                Tables\Actions\Action::make('record')
+                    ->label('Record payment')
+                    ->icon('heroicon-o-banknotes')
+                    ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled() && MemberAccountResource::canManage())
+                    ->authorize(fn () => MemberAccountResource::canManage())
+                    ->modalDescription('For a renewal paid by bank transfer, cash or cheque. Online payments are recorded automatically.')
+                    ->fillForm(function () {
+                        $standing = \App\Plugins\Membership\Support\Renewals::standing($this->getOwnerRecord());
+
+                        return ['year' => $standing->renewYear ?? now()->year, 'amount' => $standing->amount ?: null, 'method' => 'bank', 'paid_at' => now()->toDateString(), 'send_receipt' => true];
+                    })
+                    ->form([
+                        \Filament\Forms\Components\Select::make('year')->label('Membership year')
+                            ->options(collect(range(now()->year - 2, now()->year + 1))->mapWithKeys(fn ($y) => [$y => (string) $y])->all())
+                            ->required()->native(false),
+                        \Filament\Forms\Components\TextInput::make('amount')->numeric()->minValue(0.01)->required()
+                            ->prefix(fn () => \App\Plugins\Membership\Support\MembershipSettings::get('currency')),
+                        \Filament\Forms\Components\Select::make('method')->label('Paid by')
+                            ->options(collect(MembershipPayment::METHODS)->only(['bank', 'cash', 'other'])->all())
+                            ->required()->native(false),
+                        \Filament\Forms\Components\DatePicker::make('paid_at')->label('Paid on')->required()->maxDate(now()),
+                        \Filament\Forms\Components\TextInput::make('reference')->label('Transfer or receipt reference')->maxLength(100),
+                        \Filament\Forms\Components\Textarea::make('notes')->rows(2)->maxLength(500),
+                        \Filament\Forms\Components\Toggle::make('send_receipt')->label('Email the member their receipt'),
+                    ])
+                    ->action(function (array $data) {
+                        $account = $this->getOwnerRecord();
+                        $payment = app(\App\Plugins\Membership\Support\Renewals::class)->recordManual($account, $data, (bool) $data['send_receipt']);
+                        \Filament\Notifications\Notification::make()->title("Payment recorded: receipt {$payment->receipt_number}")
+                            ->body(\App\Plugins\Membership\Support\Renewals::standing($account->refresh())->message())->success()->send();
+                    }),
+            ])
             ->actions([
                 Tables\Actions\Action::make('receipt')
                     ->label('Receipt PDF')

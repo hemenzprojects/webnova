@@ -127,7 +127,7 @@ Route::prefix('v1')->group(function () {
         // The receipt PDF of an application's payment (from the page Paystack returns to)
         Route::get('/registrations/{reference}/receipt', [MembershipController::class, 'receiptPdf'])->middleware('throttle:30,1');
         // Receipt PDFs for admins, on the admin session
-        Route::middleware(['web', 'admin.can:membership-registrations,view'])
+        Route::middleware(['web', 'admin.can:membership-registrations|membership-payments|member-accounts,view'])
             ->get('/admin/payments/{id}/receipt', [AdminFileController::class, 'receipt'])->whereNumber('id');
         // Members' documents and member resources: admins only, on the admin session
         Route::middleware(['web', 'plugin:membership,accounts'])->prefix('admin')->group(function () {
@@ -139,6 +139,10 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['web', 'admin.can:membership-registrations,view'])
             ->get('/registrations/{reference}/files/{key}', [MembershipController::class, 'file']);
         Route::post('/paystack/webhook', [MembershipController::class, 'paystackWebhook']);
+
+        // Member updates: the website's feed of published updates
+        Route::get('/updates', [\App\Plugins\Membership\Http\PublicationController::class, 'feed'])
+            ->middleware(['plugin:membership,publications', 'throttle:120,1']);
 
         // Member portal (Member accounts feature): session sign-in on the "member" guard
         Route::prefix('account')->middleware(['web', 'plugin:membership,accounts'])->group(function () {
@@ -157,6 +161,19 @@ Route::prefix('v1')->group(function () {
                 Route::post('/documents', [MemberAccountController::class, 'uploadDocument'])->middleware('throttle:20,1');
                 Route::get('/documents/{id}/download', [MemberAccountController::class, 'downloadDocument'])->whereNumber('id');
                 Route::delete('/documents/{id}', [MemberAccountController::class, 'deleteDocument'])->whereNumber('id');
+            });
+            Route::middleware('plugin:membership,publications')->group(function () {
+                Route::get('/submissions', [\App\Plugins\Membership\Http\PublicationController::class, 'index']);
+                Route::post('/submissions', [\App\Plugins\Membership\Http\PublicationController::class, 'store'])->middleware('throttle:10,1');
+                Route::post('/submissions/{id}', [\App\Plugins\Membership\Http\PublicationController::class, 'update'])->whereNumber('id')->middleware('throttle:20,1');
+                Route::delete('/submissions/{id}', [\App\Plugins\Membership\Http\PublicationController::class, 'destroy'])->whereNumber('id');
+            });
+            Route::middleware('plugin:membership,renewals')->group(function () {
+                Route::post('/renewals', [MemberAccountController::class, 'startRenewal'])->middleware('throttle:10,1');
+                Route::get('/renewals/{reference}', [MemberAccountController::class, 'renewal'])->middleware('throttle:60,1');
+                Route::get('/seats', [MemberAccountController::class, 'seats']);
+                Route::post('/seats', [MemberAccountController::class, 'addSeat'])->middleware('throttle:10,1');
+                Route::delete('/seats/{id}', [MemberAccountController::class, 'removeSeat'])->whereNumber('id');
             });
             Route::get('/payments', [MemberAccountController::class, 'payments']);
             Route::get('/payments/{number}', [MemberAccountController::class, 'receipt']);

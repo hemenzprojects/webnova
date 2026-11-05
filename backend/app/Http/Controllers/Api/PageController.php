@@ -64,7 +64,8 @@ class PageController extends Controller
 
         $portal = app(MemberAccounts::class)->enabled();
         $member = $portal ? auth()->guard('member')->user() : null;
-        if ($member?->isActive()) {
+        // Active, and not suspended for not paying (Renewals)
+        if ($member?->canUseMemberArea()) {
             return null;
         }
 

@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Route middleware "admin.can:{permission},{view|manage}" for API endpoints the
  * admin tools call (page editor, media library). Uses the admin's login session,
- * so the route also needs the "web" middleware group.
+ * so the route also needs the "web" middleware group. "a|b" allows a user who
+ * may view (or manage) either screen.
  */
 class EnsureAdminCan
 {
@@ -19,7 +20,7 @@ class EnsureAdminCan
         $user = auth()->guard('web')->user();
         abort_unless($user, 401, 'Sign in to the admin first.');
 
-        $allowed = $level === Access::MANAGE ? Access::canManage($permission) : Access::canView($permission);
+        $allowed = collect(explode('|', $permission))->contains(fn (string $key) => $level === Access::MANAGE ? Access::canManage($key) : Access::canView($key));
         abort_unless($allowed, 403, 'Your role does not allow this.');
 
         return $next($request);

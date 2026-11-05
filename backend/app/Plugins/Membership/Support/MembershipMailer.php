@@ -60,6 +60,59 @@ class MembershipMailer
         ], null, $this->receiptDetails($payment), $files);
     }
 
+    /**
+     * A renewal notice (MembershipNotice::KINDS: reminder, overdue, suspended,
+     * forfeited) with a button to the portal's Payments page.
+     */
+    public function renewalNotice(MemberAccount $account, string $kind, \App\Plugins\Membership\Support\Standing $standing): bool
+    {
+        $date = fn ($d) => $d?->format('j F Y') ?? '';
+
+        return $this->send('renewal_' . $kind, $account->email, $account->name, $this->accountValues($account) + [
+            'amount' => $standing->currency . ' ' . number_format($standing->amount, 2),
+            // The year asked for: the current one, or (forfeited) the last unpaid one
+            'year' => (string) ($kind === 'forfeited' ? ($standing->paidYear ?? $standing->unpaidYear) : ($kind === 'reminder' ? $standing->renewYear : $standing->unpaidYear)),
+            'due_date' => $date($standing->dueDate),
+            'suspend_date' => $date($standing->suspendOn),
+        ], ['url' => rtrim(MembershipSettings::siteUrl(), '/') . '/account/payments', 'label' => 'Renew now']);
+    }
+
+    /** To the editorial team (Settings → Member updates, else the registrations address) */
+    public function publicationSubmitted(\App\Plugins\Membership\Models\MemberPublication $publication): bool
+    {
+        $to = MembershipSettings::get('publications_notify_email') ?: MembershipSettings::get('notification_email');
+        if (blank($to)) {
+            return false;
+        }
+        $member = $publication->memberAccount;
+
+        return $this->send('publication_submitted', $to, null, [
+            'name' => $member?->name ?? $publication->author_name ?? 'A member',
+            'member_id' => $member?->member_number ?? '',
+            'title' => $publication->title,
+            'kind' => strtolower(\App\Plugins\Membership\Models\MemberPublication::KINDS[$publication->kind] ?? $publication->kind),
+        ], ['url' => rtrim(MembershipSettings::siteUrl(), '/') . '/admin/member-updates/' . $publication->id, 'label' => 'Review it']);
+    }
+
+    /** To the member: published, or not (with the reason) */
+    public function publicationReviewed(\App\Plugins\Membership\Models\MemberPublication $publication): bool
+    {
+        $member = $publication->memberAccount;
+        if (! $member) {
+            return false;
+        }
+        $published = $publication->status === 'approved';
+
+        return $this->send($published ? 'publication_published' : 'publication_not_published', $member->email, $member->name, [
+            'name' => $member->name,
+            'title' => $publication->title,
+            'kind' => strtolower(\App\Plugins\Membership\Models\MemberPublication::KINDS[$publication->kind] ?? $publication->kind),
+            'reason' => filled($publication->review_note) ? 'Reason: ' . $publication->review_note : '',
+        ], $published
+            ? ['url' => rtrim(MembershipSettings::siteUrl(), '/') . '/', 'label' => 'Visit the website']
+            : ['url' => rtrim(MembershipSettings::siteUrl(), '/') . '/account/submissions', 'label' => 'Open my submissions']);
+    }
+
     /** Rows of a receipt's {receipt_details} box */
     public function receiptDetails(MembershipPayment $payment): array
     {
@@ -112,9 +165,16 @@ class MembershipMailer
             'reason' => 'Reason: the supporting documents were not included.',
             'receipt_number' => 'RCT-' . now()->format('Y') . '-0042',
             'year' => now()->format('Y'),
+            'due_date' => Renewals::dueDate((int) now()->format('Y'))->format('j F Y'),
+            'suspend_date' => Renewals::dueDate((int) now()->format('Y'))->addMonthsNoOverflow((int) MembershipSettings::get('renewal_suspend_months'))->format('j F Y'),
         ];
-        $withLink = in_array($kind, ['approved', 'welcome', 'reset'], true);
-        $button = $withLink ? ['url' => request()->getSchemeAndHttpHost() . '/account/set-password', 'label' => $kind === 'reset' ? 'Choose a new password' : 'Set your password'] : null;
+        $values += ['title' => 'Drought-tolerant cassava varieties for West Africa', 'kind' => 'publication'];
+        $renewal = str_starts_with($kind, 'renewal_');
+        $withLink = $renewal || in_array($kind, ['approved', 'welcome', 'reset'], true);
+        $button = $withLink ? [
+            'url' => request()->getSchemeAndHttpHost() . ($renewal ? '/account/payments' : '/account/set-password'),
+            'label' => $renewal ? 'Renew now' : ($kind === 'reset' ? 'Choose a new password' : 'Set your password'),
+        ] : null;
         $details = match ($kind) {
             'approved', 'welcome' => ['Member ID' => $values['member_id'], 'Membership' => $type, 'Sign-in email' => $values['email']],
             'receipt' => ['Receipt number' => $values['receipt_number'], 'Member ID' => $values['member_id'], 'Name' => $values['name'],

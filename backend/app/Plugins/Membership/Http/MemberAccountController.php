@@ -163,7 +163,7 @@ class MemberAccountController extends Controller
     {
         $member = $this->member();
         abort_unless($member, 401);
-        if (! $member->isActive()) {
+        if (! $member->canUseMemberArea()) {
             return response()->json(['pages' => []]);
         }
 
@@ -312,13 +312,76 @@ class MemberAccountController extends Controller
         return $pdf->download($this->signedIn()->payments()->where('receipt_number', $number)->firstOrFail());
     }
 
+    /** Renew now: start paying the next membership year online */
+    public function startRenewal(Request $request, \App\Plugins\Membership\Support\Renewals $renewals): JsonResponse
+    {
+        $result = $renewals->start($this->signedIn(), $request->getSchemeAndHttpHost());
+        if (! $result['payment_url']) {
+            throw ValidationException::withMessages(['renewal' => 'Online payment is not available right now. Please contact the secretariat to pay another way.']);
+        }
+
+        return response()->json(['payment_url' => $result['payment_url'], 'reference' => $result['renewal']->reference]);
+    }
+
+    /** Back from the payment page: check the renewal with the provider */
+    public function renewal(string $reference, \App\Plugins\Membership\Support\Renewals $renewals): JsonResponse
+    {
+        $renewal = $this->signedIn()->renewals()->where('reference', $reference)->firstOrFail();
+        try {
+            $renewal = $renewals->confirm($renewal);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return response()->json([
+            'reference' => $renewal->reference,
+            'year' => $renewal->year,
+            'payment_status' => $renewal->payment_status,
+            'receipt' => $renewal->payment?->toReceiptArray(),
+            'member' => $this->signedIn()->refresh()->toPortalArray(),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    /** A corporate member's included seats */
+    public function seats(): JsonResponse
+    {
+        $member = $this->signedIn();
+
+        return response()->json([
+            'seats' => \App\Plugins\Membership\Support\Renewals::seats($member),
+            'holders' => $member->seats()->orderBy('name')->get()->map(fn (MemberAccount $seat) => [
+                'id' => $seat->id,
+                'name' => $seat->name,
+                'email' => $seat->email,
+                'member_number' => $seat->member_number,
+                'signed_up' => $seat->hasPassword(),
+            ]),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    public function addSeat(Request $request, \App\Plugins\Membership\Support\Renewals $renewals): JsonResponse
+    {
+        $data = $request->validate(['name' => 'required|string|max:255', 'email' => 'required|email|max:255']);
+        $seat = $renewals->addSeat($this->signedIn(), $data['name'], $data['email']);
+
+        return response()->json(['message' => "{$seat->name} now has one of your seats ({$seat->member_number})."], 201);
+    }
+
+    public function removeSeat(int $id, \App\Plugins\Membership\Support\Renewals $renewals): JsonResponse
+    {
+        $member = $this->signedIn();
+        $renewals->removeSeat($member, $member->seats()->findOrFail($id));
+
+        return response()->json(['message' => 'The seat is free again.']);
+    }
+
     /** Files shared with members (Membership → Member resources): active members only */
     public function resources(): JsonResponse
     {
         $member = $this->signedIn();
 
         return response()->json([
-            'resources' => $member->isActive()
+            'resources' => $member->canUseMemberArea()
                 ? MemberResource::where('is_published', true)->orderBy('order')->orderByDesc('updated_at')->get()->map->toPortalArray()
                 : [],
         ])->header('Cache-Control', 'no-store');
@@ -326,7 +389,7 @@ class MemberAccountController extends Controller
 
     public function downloadResource(int $id)
     {
-        abort_unless($this->signedIn()->isActive(), 403, 'Your membership is not active.');
+        abort_unless($this->signedIn()->canUseMemberArea(), 403, 'Your membership is not active.');
         $resource = MemberResource::where('is_published', true)->findOrFail($id);
 
         return PrivateFiles::download($resource->file, $resource->name);

@@ -13,3 +13,6 @@ Artisan::command('inspire', function () {
 
 // Stanbic (N-Genius) membership payments whose payer did not come back to the website
 \Illuminate\Support\Facades\Schedule::command('membership:check-payments')->everyFiveMinutes()->withoutOverlapping();
+
+// Renewals (Membership): members' standing and renewal notices, once a day in the morning
+\Illuminate\Support\Facades\Schedule::command('membership:renewal-notices')->dailyAt('07:00')->withoutOverlapping();

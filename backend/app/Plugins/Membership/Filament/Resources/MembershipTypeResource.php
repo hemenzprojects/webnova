@@ -28,7 +28,7 @@ class MembershipTypeResource extends Resource
 
     protected static ?string $navigationLabel = 'Membership types';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 7;
 
     public static function form(Form $form): Form
     {
@@ -64,6 +64,27 @@ class MembershipTypeResource extends Resource
                         ->default(true),
                     Forms\Components\TextInput::make('order')->numeric()->default(0),
                 ]),
+            // Renewals: e.g. Corporate includes 2 Ordinary seats for people the corporate member names
+            Forms\Components\Section::make('Included seats')
+                ->description('For corporate memberships: the member names people in the member portal, who become members of the chosen category at no cost, covered by this membership\'s fee.')
+                ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled())
+                ->columns(2)
+                ->schema([
+                    Forms\Components\TextInput::make('included_seats')
+                        ->label('Seats included')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(50)
+                        ->default(0)
+                        ->helperText('0 for none.')
+                        ->live(onBlur: true),
+                    Forms\Components\Select::make('seat_type_id')
+                        ->label('Seats are')
+                        ->options(fn (?MembershipType $record) => MembershipType::where('id', '!=', $record?->id)->orderBy('order')->pluck('name', 'id'))
+                        ->placeholder('e.g. Ordinary')
+                        ->native(false)
+                        ->required(fn (Forms\Get $get) => (int) $get('included_seats') > 0),
+                ]),
         ]);
     }
 
@@ -76,6 +97,9 @@ class MembershipTypeResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('price')->label('Fee')
                     ->formatStateUsing(fn ($state, MembershipType $record) => MembershipSettings::get('currency') . ' ' . number_format((float) $state, 2) . ' ' . (MembershipType::PERIODS[$record->period] ?? '')),
+                Tables\Columns\TextColumn::make('included_seats')->label('Seats')
+                    ->formatStateUsing(fn ($state, MembershipType $record) => $state ? "{$state} × " . ($record->seatType?->name ?? '?') : '—')
+                    ->visible(fn () => \App\Plugins\Membership\Support\Renewals::enabled()),
                 Tables\Columns\TextColumn::make('registrations_count')->counts('registrations')->label('Registrations'),
                 Tables\Columns\IconColumn::make('is_active')->label('On the form')->boolean()
                     ->tooltip(fn (MembershipType $record) => $record->is_active ? 'Applicants can choose it' : 'Granted by the committee only'),

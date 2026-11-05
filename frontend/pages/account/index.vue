@@ -31,9 +31,9 @@
             <dd class="text-gray-900">{{ formatDate(member?.member_since) }}</dd>
           </div>
           <div>
-            <dt class="text-xs text-gray-500">Membership {{ member?.current_year }}</dt>
+            <dt class="text-xs text-gray-500">{{ member?.standing ? 'Membership fee' : `Membership ${member?.current_year}` }}</dt>
             <dd :class="paidThisYear ? 'text-green-700' : 'text-amber-700'" class="font-medium">
-              {{ paidThisYear ? 'Paid' : 'Not paid yet' }}
+              {{ member?.standing ? member.standing.label : (paidThisYear ? 'Paid' : 'Not paid yet') }}
               <NuxtLink to="/account/payments" class="ml-1 text-sm font-normal text-primary hover:underline">Payments</NuxtLink>
             </dd>
           </div>
@@ -47,6 +47,7 @@
         <ul class="space-y-3 text-sm">
           <li><NuxtLink to="/account/profile" class="text-primary hover:underline">Update my profile</NuxtLink></li>
           <li><NuxtLink to="/account/payments" class="text-primary hover:underline">My payments and receipts</NuxtLink></li>
+          <li v-if="member?.features?.publications"><NuxtLink to="/account/submissions" class="text-primary hover:underline">Share a publication or news</NuxtLink></li>
           <li v-if="member?.features?.documents"><NuxtLink to="/account/documents" class="text-primary hover:underline">My documents</NuxtLink></li>
           <li><NuxtLink to="/account/pages" class="text-primary hover:underline">Members' area</NuxtLink></li>
           <li><NuxtLink to="/account/password" class="text-primary hover:underline">Change password</NuxtLink></li>
@@ -72,5 +73,7 @@ const { member } = useMember()
 const { fetchMemberPages } = useApi()
 const { data } = await useAsyncData('member-pages', () => fetchMemberPages().catch(() => ({ pages: [] })))
 const pages = computed(() => data.value?.pages || [])
-const paidThisYear = computed(() => !!member.value?.paid_year && member.value.paid_year >= member.value.current_year)
+const paidThisYear = computed(() => member.value?.standing
+  ? ['paid', 'exempt'].includes(member.value.standing.state)
+  : !!member.value?.paid_year && member.value.paid_year >= member.value.current_year)
 </script>

@@ -28,7 +28,7 @@ class MembershipSettingsPage extends Page
 
     protected static ?string $navigationLabel = 'Settings';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 10;
 
     protected static ?string $title = 'Membership settings';
 
@@ -103,6 +103,73 @@ class MembershipSettingsPage extends Page
                                     ? 'None yet. Choose "Members only" under Who can see this page when editing a page (Content → Pages).'
                                     : $pages->implode(', ');
                             }),
+                    ]),
+
+                Forms\Components\Section::make('Renewals')
+                    ->description('The membership year is the calendar year. A payment for a year, whenever it is made, pays that year; paying the current year\'s fee always puts a member back in good standing. Categories with no fee are never asked to pay.')
+                    ->visible(fn (Get $get) => in_array(MembershipPlugin::FEATURE_RENEWALS, $get('features') ?? [], true))
+                    ->columns(4)
+                    ->schema([
+                        Forms\Components\Select::make('renewal_due_day')
+                            ->label('Fee due on (day)')
+                            ->options(array_combine(range(1, 28), range(1, 28)))
+                            ->required()
+                            ->native(false),
+                        Forms\Components\Select::make('renewal_due_month')
+                            ->label('of (month)')
+                            ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Carbon\Carbon::create(2000, $m, 1)->format('F')])->all())
+                            ->required()
+                            ->native(false),
+                        Forms\Components\TextInput::make('renewal_reminder_days')
+                            ->label('Reminder, days before')
+                            ->numeric()->minValue(0)->maxValue(120)->required()
+                            ->helperText('0 = no reminder.'),
+                        Forms\Components\Select::make('renewal_early_month')
+                            ->label('Next year payable from')
+                            ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Carbon\Carbon::create(2000, $m, 1)->format('F')])->all())
+                            ->helperText('For members who have paid this year.')
+                            ->required()
+                            ->native(false),
+                        Forms\Components\TextInput::make('renewal_notice_months')
+                            ->label('Overdue notice, months after')
+                            ->numeric()->minValue(0)->maxValue(12)->required(),
+                        Forms\Components\TextInput::make('renewal_suspend_months')
+                            ->label('Suspended, months after')
+                            ->numeric()->minValue(1)->maxValue(24)->required()
+                            ->helperText('Members\' area closed until they pay.'),
+                        Forms\Components\TextInput::make('renewal_forfeit_years')
+                            ->label('Forfeited after unpaid years')
+                            ->numeric()->minValue(0)->maxValue(10)->required()
+                            ->helperText('Whole membership years. 0 = never.'),
+                        Forms\Components\TextInput::make('renewal_notice_limit')
+                            ->label('Notices per day, at most')
+                            ->numeric()->minValue(1)->maxValue(5000)->required()
+                            ->helperText('Mail servers limit sending; the rest go the next day.'),
+                        Forms\Components\Placeholder::make('renewal_example')
+                            ->hiddenLabel()
+                            ->columnSpanFull()
+                            ->content(function (Get $get) {
+                                $year = now()->year + (now()->gte(\App\Plugins\Membership\Support\Renewals::dueDate(now()->year)) ? 1 : 0);
+                                $month = max(1, min(12, (int) $get('renewal_due_month')));
+                                $due = \Carbon\CarbonImmutable::create($year, $month, max(1, min(28, (int) $get('renewal_due_day'))));
+                                $d = fn ($date) => $date->format('j F Y');
+
+                                return "With these settings, for {$year}: reminder from " . $d($due->subDays((int) $get('renewal_reminder_days')))
+                                    . ', due ' . $d($due) . ', overdue notice ' . $d($due->addMonthsNoOverflow((int) $get('renewal_notice_months')))
+                                    . ', suspended from ' . $d($due->addMonthsNoOverflow((int) $get('renewal_suspend_months')))
+                                    . ((int) $get('renewal_forfeit_years') > 0 ? ', forfeited on 1 January ' . ($year + (int) $get('renewal_forfeit_years')) . ' if still unpaid.' : '.');
+                            }),
+                    ]),
+
+                Forms\Components\Section::make('Member updates')
+                    ->description('Members submit publications, milestones and news in the portal; nothing appears on the website until the editorial team publishes it (Membership → Member updates).')
+                    ->visible(fn (Get $get) => in_array(MembershipPlugin::FEATURE_PUBLICATIONS, $get('features') ?? [], true))
+                    ->schema([
+                        Forms\Components\TextInput::make('publications_notify_email')
+                            ->label('Email new submissions to')
+                            ->email()
+                            ->placeholder(fn () => MembershipSettings::get('notification_email') ?: 'editor@your-organisation.org')
+                            ->helperText('The editorial team. Empty: the "Email me new registrations at" address above.'),
                     ]),
 
                 Forms\Components\Section::make('Privacy and data')

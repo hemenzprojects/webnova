@@ -19,8 +19,8 @@ class MemberAccount extends Authenticatable
     ];
 
     protected $fillable = [
-        'member_number', 'name', 'email', 'password', 'membership_type_id', 'membership_registration_id',
-        'status', 'invited_at', 'last_login_at', 'consented_at', 'consent_version',
+        'member_number', 'name', 'email', 'password', 'membership_type_id', 'sponsor_account_id', 'membership_registration_id',
+        'status', 'standing', 'invited_at', 'last_login_at', 'consented_at', 'consent_version',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -44,6 +44,33 @@ class MemberAccount extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(MemberProfile::class);
+    }
+
+    /** The corporate member whose fee covers this member (a seat) */
+    public function sponsor(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'sponsor_account_id');
+    }
+
+    /** The seats this (corporate) member has given out */
+    public function seats(): HasMany
+    {
+        return $this->hasMany(self::class, 'sponsor_account_id');
+    }
+
+    public function publications(): HasMany
+    {
+        return $this->hasMany(MemberPublication::class);
+    }
+
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(MembershipRenewal::class);
+    }
+
+    public function notices(): HasMany
+    {
+        return $this->hasMany(MembershipNotice::class);
     }
 
     public function payments(): HasMany
@@ -82,10 +109,19 @@ class MemberAccount extends Authenticatable
         return $this->belongsTo(MembershipRegistration::class, 'membership_registration_id');
     }
 
-    /** May open members-only pages */
+    /** Not suspended by an admin (Members → Suspend) */
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * May open members-only pages and files: active, and (with the Renewals
+     * feature) not suspended or forfeited for not paying.
+     */
+    public function canUseMemberArea(): bool
+    {
+        return $this->isActive() && \App\Plugins\Membership\Support\Renewals::standing($this)->canUseMemberArea();
     }
 
     /** Has set a password from the welcome email */
@@ -103,8 +139,12 @@ class MemberAccount extends Authenticatable
             'member_number' => $this->member_number,
             'membership_type' => $this->membershipType?->name,
             'status' => $this->status,
-            'status_label' => self::STATUSES[$this->status] ?? $this->status,
-            'is_active' => $this->isActive(),
+            // "Suspended (not paid)" while closed for not paying (Renewals), else the admin status
+            'status_label' => $this->isActive() && ! $this->canUseMemberArea()
+                ? \App\Plugins\Membership\Support\Renewals::standing($this)->label()
+                : (self::STATUSES[$this->status] ?? $this->status),
+            // Members-only pages and files are open to them (also false while suspended for not paying)
+            'is_active' => $this->canUseMemberArea(),
             'member_since' => $this->created_at?->toDateString(),
             // Membership runs by calendar year: a payment any day in a year covers that year
             'paid_year' => $this->paidYear(),
@@ -114,7 +154,13 @@ class MemberAccount extends Authenticatable
             // Optional parts of the portal the site has switched on
             'features' => [
                 'documents' => app(\App\Plugins\PluginManager::class)->featureIsActive('membership', \App\Plugins\Membership\MembershipPlugin::FEATURE_DOCUMENTS),
+                'renewals' => \App\Plugins\Membership\Support\Renewals::enabled(),
+                'publications' => \App\Plugins\Membership\Support\Publications::enabled(),
             ],
+            // Renewals: paid, due, overdue, suspended… with what to pay (null while the feature is off)
+            'standing' => \App\Plugins\Membership\Support\Renewals::enabled() ? \App\Plugins\Membership\Support\Renewals::standing($this)->toPortalArray() : null,
+            // Seats a corporate membership includes (Our seats in the portal)
+            'seats_included' => \App\Plugins\Membership\Support\Renewals::enabled() ? \App\Plugins\Membership\Support\Renewals::seats($this)['included'] : 0,
         ];
     }
 }

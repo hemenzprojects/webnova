@@ -13,7 +13,66 @@ export interface Member {
   current_year: number
   needs_consent: boolean
   /** Optional parts of the portal the site has switched on */
-  features: { documents: boolean }
+  features: { documents: boolean; renewals: boolean; publications: boolean }
+  /** Renewals: where the member stands with the yearly fee (null while the feature is off) */
+  standing: MemberStanding | null
+  /** Seats a corporate membership includes */
+  seats_included: number
+}
+
+export interface MemberStanding {
+  state: 'exempt' | 'paid' | 'due' | 'overdue' | 'suspended' | 'forfeited'
+  label: string
+  message: string
+  paid_year: number | null
+  /** The year Renew now pays for; null when there is nothing to pay */
+  renew_year: number | null
+  amount: number
+  currency: string
+  due_date: string | null
+  suspend_on: string | null
+  covered_by: string | null
+  good_standing: boolean
+}
+
+/** A published member update on the website (Member updates block) */
+export interface MemberUpdate {
+  id: number
+  kind: string
+  kind_label: string
+  title: string
+  summary: string | null
+  link: string | null
+  image: string | null
+  author: string | null
+  author_detail: string | null
+  published_at: string | null
+  is_featured: boolean
+}
+
+/** A member's own submission (portal, My submissions) */
+export interface MemberSubmission {
+  id: number
+  kind: string
+  kind_label: string
+  title: string
+  summary: string | null
+  link: string | null
+  image: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  status_label: string
+  review_note: string | null
+  submitted_at: string | null
+  published_at: string | null
+  editable: boolean
+}
+
+export interface MemberSeat {
+  id: number
+  name: string
+  email: string
+  member_number: string | null
+  signed_up: boolean
 }
 
 export interface MemberProfile {
@@ -242,7 +301,25 @@ export const useApi = () => {
   const deleteMemberDocument = (id: number) => memberRequest<{ message: string }>(`/documents/${id}`, 'DELETE')
   const fetchMemberResources = () => memberRequest<{ resources: MemberResourceFile[] }>('/resources')
   const fetchMemberPayments = () => memberRequest<{ payments: MembershipReceipt[] }>('/payments')
+  const startRenewal = () => memberRequest<{ payment_url: string; reference: string }>('/renewals', 'POST')
+  const fetchRenewal = (reference: string) =>
+    memberRequest<{ reference: string; year: number; payment_status: string; receipt: MembershipReceipt | null; member: Member }>(`/renewals/${encodeURIComponent(reference)}`)
+  const fetchSeats = () =>
+    memberRequest<{ seats: { included: number; used: number; type: string | null }; holders: MemberSeat[] }>('/seats')
+  const addSeat = (name: string, email: string) => memberRequest<{ message: string }>('/seats', 'POST', { name, email })
+  const removeSeat = (id: number) => memberRequest<{ message: string }>(`/seats/${id}`, 'DELETE')
   const fetchMemberReceipt = (number: string) => memberRequest<{ receipt: MembershipReceipt }>(`/payments/${encodeURIComponent(number)}`)
+
+  // Member updates: published publications, milestones and news (Membership plugin)
+  const fetchMemberUpdates = async (params: { kind?: string; limit?: number; page?: number; featured_first?: boolean } = {}) => {
+    const query = Object.fromEntries(Object.entries({ ...params, featured_first: params.featured_first ? 1 : undefined }).filter(([, v]) => v !== undefined && v !== ''))
+    return await $fetch<{ items: MemberUpdate[]; kinds: Record<string, string>; page: number; last_page: number }>(`${apiBase}/membership/updates`, { headers: ssrHeaders(), query })
+  }
+  const fetchSubmissions = () =>
+    memberRequest<{ submissions: MemberSubmission[]; kinds: Record<string, string>; can_submit: boolean; max_pending: number }>('/submissions')
+  const saveSubmission = (form: FormData, id?: number) =>
+    memberRequest<{ submission: MemberSubmission; message: string }>(id ? `/submissions/${id}` : '/submissions', 'POST', form)
+  const deleteSubmission = (id: number) => memberRequest<{ message: string }>(`/submissions/${id}`, 'DELETE')
 
   // The site's privacy notice (Membership plugin); 404 when it has none
   const fetchPrivacyNotice = async () => {
@@ -336,6 +413,15 @@ export const useApi = () => {
     deleteMemberDocument,
     fetchMemberResources,
     fetchMemberPayments,
+    fetchMemberUpdates,
+    fetchSubmissions,
+    saveSubmission,
+    deleteSubmission,
+    startRenewal,
+    fetchRenewal,
+    fetchSeats,
+    addSeat,
+    removeSeat,
     fetchMemberReceipt,
     fetchPrivacyNotice,
     fetchDonationForm,

@@ -166,7 +166,9 @@ class MembershipController extends Controller
         if ($request->input('event') === 'charge.success') {
             $paymentReference = (string) $request->input('data.reference');
             // A Paystack account has a single webhook URL, shared with the Donations plugin
-            if (! $this->registrar->confirmByPaymentReference($paymentReference) && app(PluginManager::class)->isActive('donations')) {
+            if (! $this->registrar->confirmByPaymentReference($paymentReference)
+                && ! app(\App\Plugins\Membership\Support\Renewals::class)->confirmByPaymentReference($paymentReference)
+                && app(PluginManager::class)->isActive('donations')) {
                 app(Donor::class)->confirmByPaymentReference($paymentReference);
             }
         }

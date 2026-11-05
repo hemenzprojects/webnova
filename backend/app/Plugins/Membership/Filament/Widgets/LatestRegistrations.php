@@ -17,9 +17,15 @@ class LatestRegistrations extends TableWidget
 
     protected static ?string $heading = 'Latest registrations';
 
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 5;
 
     protected int|string|array $columnSpan = 'full';
+
+    /** Two thirds next to "Members by country" when that is shown (member portal on), else the full width */
+    public function getColumnSpan(): int|string|array
+    {
+        return app(\App\Plugins\Membership\Support\MemberAccounts::class)->enabled() ? ['md' => 2] : 'full';
+    }
 
     public function table(Table $table): Table
     {

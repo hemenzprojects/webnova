@@ -100,8 +100,9 @@ class DonationController extends Controller
         if ($request->input('event') === 'charge.success') {
             $paymentReference = (string) $request->input('data.reference');
 
-            if (! $this->donor->confirmByPaymentReference($paymentReference) && $plugins->isActive('membership')) {
-                app(Registrar::class)->confirmByPaymentReference($paymentReference);
+            if (! $this->donor->confirmByPaymentReference($paymentReference) && $plugins->isActive('membership')
+                && ! app(Registrar::class)->confirmByPaymentReference($paymentReference)) {
+                app(\App\Plugins\Membership\Support\Renewals::class)->confirmByPaymentReference($paymentReference);
             }
         }
 

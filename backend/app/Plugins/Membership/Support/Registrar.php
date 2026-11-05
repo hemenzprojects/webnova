@@ -104,33 +104,14 @@ class Registrar
      */
     public function startPayment(MembershipRegistration $registration, string $siteUrl): ?string
     {
-        $gateway = MembershipSettings::gateway();
-        if (! $gateway->isConfigured() || ! $registration->email || $registration->payment_status === 'paid') {
-            return null;
-        }
-
-        // A fresh reference per attempt, so a failed payment can be retried
-        $attempt = $registration->payment_reference ? ((int) substr(strrchr($registration->payment_reference, '-'), 1)) + 1 : 1;
-        $reference = "{$registration->reference}-{$attempt}";
-        // Each attempt remembers its provider, so it is checked there even if the site switches later
-        $attempts = $registration->gateway_orders ?? [];
-        $attempts[$reference] = ['provider' => $gateway->key(), 'order_id' => null];
-        $registration->update(['payment_reference' => $reference, 'payment_provider' => $gateway->key(), 'gateway_order_id' => null, 'gateway_orders' => $attempts]);
-
-        $payment = $gateway->start(
-            $registration->email,
+        return app(OnlinePayments::class)->start(
+            $registration,
+            (string) $registration->email,
             (float) $registration->amount,
             $registration->currency,
-            $reference,
             rtrim($siteUrl, '/') . '/membership/complete?reference=' . urlencode($registration->reference),
             ['registration' => $registration->reference, 'membership_type' => $registration->membershipType?->name],
         );
-        if ($payment['order_id']) {
-            $attempts[$reference]['order_id'] = $payment['order_id'];
-            $registration->update(['gateway_order_id' => $payment['order_id'], 'gateway_orders' => $attempts]);
-        }
-
-        return $payment['url'];
     }
 
     /**
@@ -141,24 +122,18 @@ class Registrar
     public function confirmPayment(MembershipRegistration $registration, ?string $paymentReference = null): MembershipRegistration
     {
         $paymentReference ??= $registration->payment_reference;
-
-        // Attempts are "{registration reference}-{n}"; anything else is a receipt number an admin typed
-        if ($registration->payment_status === 'paid' || ! $paymentReference || ! str_starts_with($paymentReference, $registration->reference . '-')) {
+        if ($registration->payment_status === 'paid') {
             return $registration;
         }
 
-        // Checked with the provider this attempt was sent to; N-Genius looks payments up by its own order id
-        $attempt = $registration->paymentAttempt($paymentReference);
-        $result = MembershipSettings::gateway($attempt['provider'])->check($paymentReference, $attempt['order_id']);
+        // Only online attempts; anything else is a receipt number an admin typed
+        $payments = app(OnlinePayments::class);
+        $result = $payments->check($registration, $paymentReference);
         if (! $result) {
             return $registration;
         }
 
-        $paidInFull = $result['status'] === 'success'
-            && strtoupper($result['currency']) === strtoupper($registration->currency)
-            && $result['amount'] + 0.001 >= (float) $registration->amount;
-
-        if ($paidInFull) {
+        if ($payments->paidInFull($result, (float) $registration->amount, $registration->currency)) {
             $registration->update(['payment_status' => 'paid', 'paid_at' => now(), 'payment_reference' => $paymentReference]);
         } elseif ($paymentReference === $registration->payment_reference && $result['status'] === 'failed') {
             $registration->update(['payment_status' => 'failed']);

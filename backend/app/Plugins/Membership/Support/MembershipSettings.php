@@ -36,6 +36,17 @@ class MembershipSettings
         'privacy_version' => 0,
         // Rejected and never-paid applications (and their documents) are deleted after this many months; 0 = kept
         'retention_months' => 24,
+        // Renewals feature: the membership year is the calendar year, its fee due on this day
+        'renewal_due_month' => 3,
+        'renewal_due_day' => 1,
+        'renewal_reminder_days' => 30,   // reminder this many days before the due date; 0 = none
+        'renewal_notice_months' => 1,    // overdue notice this long after the due date
+        'renewal_suspend_months' => 3,   // suspended (members' area closed) this long after the due date
+        'renewal_forfeit_years' => 2,    // forfeited once this many whole membership years have gone unpaid
+        'renewal_early_month' => 11,     // members who have paid may pay next year's fee from this month
+        'renewal_notice_limit' => 200,   // notices emailed per day at most (mail servers limit sending)
+        // Member updates feature: who hears about new submissions (the editorial team)
+        'publications_notify_email' => null,
         // Choices on member profiles (My profile), one per line in Settings
         'profile_crops' => null,
         'profile_expertise' => null,

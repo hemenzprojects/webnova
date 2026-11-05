@@ -69,6 +69,7 @@ export const useElementorEditor = () => {
 
     // Dynamic Widgets
     { type: 'dynamic_news', label: 'Posts', icon: 'article', category: 'dynamic' },
+    { type: 'member_updates', label: 'Member updates', icon: 'auto_stories', category: 'dynamic', plugin: 'membership' },
     { type: 'dynamic_events', label: 'Events', icon: 'event', category: 'dynamic' },
     { type: 'dynamic_services', label: 'Services', icon: 'miscellaneous_services', category: 'dynamic' },
     { type: 'dynamic_members', label: 'Members', icon: 'groups', category: 'dynamic' },
@@ -462,6 +463,16 @@ export const useElementorEditor = () => {
       membership_form: {
         heading: '',
         text: ''
+      },
+      member_updates: {
+        eyebrow: 'From our members',
+        heading: 'Member updates',
+        text: 'Recent publications, milestones and news from APBA members.',
+        kind: '',
+        limit: '6',
+        featuredFirst: 'yes',
+        showFilters: 'yes',
+        background: 'plain'
       },
       donation_form: {
         heading: 'Make a Donation',

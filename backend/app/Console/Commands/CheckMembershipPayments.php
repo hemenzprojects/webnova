@@ -55,6 +55,29 @@ class CheckMembershipPayments extends Command
                             }
                         }
                     });
+
+                // Renewals started in the member portal
+                \App\Plugins\Membership\Models\MembershipRenewal::query()
+                    ->whereNotNull('gateway_orders')
+                    ->whereIn('payment_status', ['unpaid', 'failed'])
+                    ->where('updated_at', '>', now()->subDays(3))
+                    ->limit(50)
+                    ->get()
+                    ->each(function (\App\Plugins\Membership\Models\MembershipRenewal $renewal) use ($tenant) {
+                        $attempts = array_filter(array_reverse(array_keys($renewal->gateway_orders ?? [])),
+                            fn ($attempt) => $renewal->paymentAttempt($attempt)['provider'] === 'stanbic' && filled($renewal->paymentAttempt($attempt)['order_id']));
+                        foreach ($attempts as $attempt) {
+                            try {
+                                if (app(\App\Plugins\Membership\Support\Renewals::class)->confirm($renewal, $attempt)->payment_status === 'paid') {
+                                    $this->line("{$tenant->getTenantKey()}: renewal {$renewal->reference} paid");
+
+                                    return;
+                                }
+                            } catch (Throwable $e) {
+                                report($e);
+                            }
+                        }
+                    });
             });
         }
 

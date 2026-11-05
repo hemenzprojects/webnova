@@ -25,8 +25,8 @@ class MembershipPayment extends Model
     ];
 
     protected $fillable = [
-        'receipt_number', 'member_account_id', 'membership_registration_id', 'membership_type_id', 'purpose', 'year',
-        'amount', 'currency', 'method', 'reference', 'gateway_reference', 'name', 'email', 'paid_at', 'emailed_at',
+        'receipt_number', 'member_account_id', 'membership_registration_id', 'membership_renewal_id', 'membership_type_id', 'purpose', 'year',
+        'amount', 'currency', 'method', 'reference', 'gateway_reference', 'name', 'email', 'notes', 'paid_at', 'emailed_at',
     ];
 
     protected $casts = [
@@ -44,6 +44,11 @@ class MembershipPayment extends Model
     public function registration(): BelongsTo
     {
         return $this->belongsTo(MembershipRegistration::class, 'membership_registration_id');
+    }
+
+    public function renewal(): BelongsTo
+    {
+        return $this->belongsTo(MembershipRenewal::class, 'membership_renewal_id');
     }
 
     public function membershipType(): BelongsTo
@@ -73,7 +78,7 @@ class MembershipPayment extends Model
             'method' => self::METHODS[$this->method] ?? $this->method,
             'reference' => $this->reference,
             'paid_at' => $this->paid_at?->toIso8601String(),
-            'application_reference' => $this->registration?->reference,
+            'application_reference' => $this->registration?->reference ?? $this->renewal?->reference,
         ];
     }
 }

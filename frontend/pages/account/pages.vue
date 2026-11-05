@@ -1,7 +1,11 @@
 <template>
   <AccountShell title="Members' area">
     <p v-if="!member?.is_active" class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-600">
-      The members' area opens again once your membership is active.
+      <template v-if="member?.standing && !member.standing.good_standing">
+        {{ member.standing.message }}
+        <NuxtLink v-if="member.standing.renew_year" to="/account/payments" class="text-primary font-medium hover:underline">Renew now</NuxtLink>
+      </template>
+      <template v-else>The members' area opens again once your membership is active.</template>
     </p>
     <template v-else>
       <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">

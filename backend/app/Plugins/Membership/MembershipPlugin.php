@@ -35,12 +35,16 @@ class MembershipPlugin extends Plugin
 
     public function blocks(): array
     {
-        return ['membership_form'];
+        return ['membership_form', 'member_updates'];
     }
 
     public const FEATURE_ACCOUNTS = 'accounts';
 
     public const FEATURE_DOCUMENTS = 'documents';
+
+    public const FEATURE_RENEWALS = 'renewals';
+
+    public const FEATURE_PUBLICATIONS = 'publications';
 
     public function features(): array
     {
@@ -49,6 +53,16 @@ class MembershipPlugin extends Plugin
                 'label' => 'Member accounts and members-only pages',
                 'description' => 'Approved, paid members get a login and a member portal on the website (/account), and pages can be made visible to members only.',
                 'requires' => [],
+            ],
+            self::FEATURE_RENEWALS => [
+                'label' => 'Yearly renewals',
+                'description' => 'Members renew each year in the portal (Renew now), with a due date, reminders, an overdue notice, and automatic suspension and forfeiture for not paying. Corporate categories can include seats for other members.',
+                'requires' => [self::FEATURE_ACCOUNTS],
+            ],
+            self::FEATURE_PUBLICATIONS => [
+                'label' => 'Member updates and publications',
+                'description' => 'Members in good standing submit publications, milestones and news (a cover image and a link) in the portal; the editorial team reviews them under Membership → Member updates before they appear on the website (the "Member updates" page block).',
+                'requires' => [self::FEATURE_ACCOUNTS],
             ],
             self::FEATURE_DOCUMENTS => [
                 'label' => 'Member documents',

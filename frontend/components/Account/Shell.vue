@@ -69,6 +69,16 @@
       <main class="flex-1 min-w-0 px-4 py-6 lg:px-8 lg:py-8">
         <div class="max-w-5xl">
           <AccountConsentBanner v-if="member?.needs_consent" class="mb-6" />
+          <!-- Renewals: overdue, suspended or forfeited for not paying -->
+          <div
+            v-if="feeWarning && route.path !== '/account/payments'"
+            class="mb-6 rounded-xl border p-4 text-sm flex flex-wrap items-center justify-between gap-3"
+            :class="member?.standing?.good_standing ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-red-50 border-red-200 text-red-900'"
+            role="alert"
+          >
+            <span>{{ member?.standing?.message }}</span>
+            <NuxtLink v-if="member?.standing?.renew_year" to="/account/payments" class="px-4 py-2 rounded-lg bg-primary text-white font-medium whitespace-nowrap">Renew now</NuxtLink>
+          </div>
           <h1 v-if="title" class="text-2xl md:text-3xl font-bold text-gray-900 mb-6" style="font-family: var(--font-heading)">{{ title }}</h1>
           <slot />
         </div>
@@ -99,6 +109,8 @@ const items = computed(() => [
   ...(member.value?.features?.documents ? [{ to: '/account/documents', label: 'My documents', icon: ICONS.folder }] : []),
   { to: '/account/membership', label: 'Membership details', icon: ICONS.card },
   { to: '/account/payments', label: 'Payments', icon: ICONS.receipt },
+  ...(member.value?.seats_included ? [{ to: '/account/seats', label: 'Our seats', icon: ICONS.profile }] : []),
+  ...(member.value?.features?.publications ? [{ to: '/account/submissions', label: 'My submissions', icon: ICONS.pages }] : []),
   { to: '/account/pages', label: "Members' area", icon: ICONS.pages },
   { to: '/account/password', label: 'Change password', icon: ICONS.lock },
 ])
@@ -108,6 +120,7 @@ const isCurrent = (to: string) => (to === '/account' ? route.path === '/account'
 const menuOpen = ref(false)
 
 const { member, logout } = useMember()
+const feeWarning = computed(() => ['overdue', 'suspended', 'forfeited'].includes(member.value?.standing?.state ?? ''))
 const initials = computed(() =>
   (member.value?.name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
 )

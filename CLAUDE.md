@@ -119,6 +119,10 @@ docker compose -f docker-compose.local.yml exec app php artisan config:clear
 docker compose -f docker-compose.local.yml build app && docker compose -f docker-compose.local.yml up -d  # rebuild after frontend changes
 ```
 
+### Copying production to local
+
+`make import-production` (`scripts/import-production.sh`) replaces the local databases with a copy of production: the central database and every site's `customer_*`, through `fly proxy` and a throwaway `postgres:{version}` container. Production's `DATABASE_URL` and `APP_KEY` are read with `fly ssh` and kept in memory. Then `php artisan webnova:prepare-production-copy` (refuses to run in production) re-encrypts plugin settings and platform settings with the local key, removes secrets (anything named secret / api_key / password / token, and Stanbic's outlet), switches Platform → Email settings off, and adds a `{site}.localhost` domain to each site. Admin logins are production's. `make import-production-files` copies `storage/app/public` and `private` (tar on the server + `fly ssh sftp get`). The copy holds real members' personal data.
+
 ### When to Rebuild vs Not
 
 | Change | Rebuild needed? |

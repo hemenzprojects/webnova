@@ -1,4 +1,4 @@
-.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-clean docker-prune docker-check db-pull fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
+.PHONY: help up down restart build rebuild logs shell migrate migrate-fresh migrate-rollback seed tenants-migrate tinker artisan composer npm db-shell redis-shell cache-clear route-clear config-clear view-clear clear-all queue storage-link test pint fe-dev fe-dev-clean docker-reset docker-clean docker-prune docker-check import-production import-production-files fly-deploy fly-logs fly-shell fly-migrate fly-tenants-migrate fly-seed fly-db fly-db-proxy fly-certs-add fly-certs-show
 
 COMPOSE    = docker compose -f docker-compose.local.yml
 FLY_CONFIG = deploy/fly/fly.toml
@@ -25,9 +25,9 @@ help:
 	@echo "  make tenants-migrate     - Run migrations on all tenant DBs"
 	@echo "  make db-shell            - PostgreSQL shell (central DB)"
 	@echo "  make redis-shell         - Redis CLI"
-	@echo "  make db-pull             - Pull production Fly Postgres into local"
-	@echo "                             Requires: export FLY_DB_URL=<url>"
-	@echo "                             Get url:  fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"
+	@echo "  make import-production   - Replace local databases with a copy of production"
+	@echo "                             (all sites; payment keys removed, email off)"
+	@echo "  make import-production-files - Copy production's uploaded files to local"
 	@echo ""
 	@echo "── Laravel ──────────────────────────────────────────────────────────"
 	@echo "  make tinker              - Laravel Tinker"
@@ -118,12 +118,11 @@ db-shell:
 redis-shell:
 	$(COMPOSE) exec redis redis-cli
 
-db-pull:
-	@[ -n "$(FLY_DB_URL)" ] || (echo "Error: FLY_DB_URL not set."; echo "Get it: fly ssh console --config $(FLY_CONFIG) -C 'echo \$$DATABASE_URL'"; exit 1)
-	@echo "Dumping production Fly Postgres..."
-	pg_dump "$(FLY_DB_URL)" --no-owner --no-privileges \
-		| $(COMPOSE) exec -T postgres psql -U webnova webnova_central
-	@echo "Done."
+import-production:
+	@./scripts/import-production.sh
+
+import-production-files:
+	@./scripts/import-production-files.sh
 
 # ── Laravel ───────────────────────────────────────────────────────────────────
 tinker:
